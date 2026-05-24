@@ -25,10 +25,14 @@
   right: 0;
   z-index: 101;
   max-height: 90dvh;
+  border: 1px solid var(--color-settings-border);
+  border-bottom: none;
   border-radius: 16px 16px 0 0;
   background-color: var(--color-bg);
   display: flex;
   flex-direction: column;
+  max-width: 800px;
+  margin: 0 auto;
   /* Slide up when entering, slide down when leaving */
   transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
 }

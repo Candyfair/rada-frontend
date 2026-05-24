@@ -1,0 +1,198 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ---- Date range picker ---- */
+.dateRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dateInput {
+  flex: 1;
+  padding: 8px 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: -0.05em;
+  background-color: var(--color-login-input-bg);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-panel-border);
+  border-radius: 6px;
+  /* Remove default browser chrome on datetime-local inputs */
+  -webkit-appearance: none;
+}
+
+.dateInput:focus {
+  outline: none;
+  border-color: var(--color-detail-text);
+}
+
+.applyButton {
+  padding: 8px 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: -0.05em;
+  background-color: var(--color-detail-btn-bg);
+  color: var(--color-detail-btn-text);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  /* Minimum tap target */
+  min-height: 36px;
+}
+
+/* ---- Metric selector ---- */
+.metricRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.metricChip {
+  padding: 5px 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: -0.05em;
+  border-radius: 20px;
+  border: 1px solid var(--color-panel-border);
+  background: none;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.metricChip.active {
+  background-color: var(--color-detail-btn-bg);
+  color: var(--color-detail-btn-text);
+  border-color: var(--color-detail-btn-bg);
+}
+
+/* ---- Battery selector ---- */
+.selectorWrapper {
+  position: relative;
+}
+
+.selectorBox {
+  min-height: 44px;
+  padding: 6px 36px 6px 10px;
+  border: 1px solid var(--color-panel-border);
+  border-radius: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  cursor: pointer;
+  background-color: var(--color-login-input-bg);
+}
+
+.chevron {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-primary);
+  pointer-events: none;
+  transition: transform 0.2s ease;
+}
+
+.chevron.open {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background-color: var(--color-panel-row-bg);
+  color: var(--color-panel-value);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: -0.05em;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tagRemove {
+  background: none;
+  border: none;
+  color: var(--color-panel-value);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+  opacity: 0.7;
+  font-size: 14px;
+}
+
+.placeholder {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-text-muted);
+  letter-spacing: -0.05em;
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-panel-border);
+  border-radius: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.dropdownItem {
+  padding: 10px 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: -0.05em;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dropdownItem:active {
+  background-color: var(--color-toggle-bg);
+}
+
+.dropdownItem.selected {
+  color: var(--color-detail-text);
+}
+
+/* ---- Chart area ---- */
+.chartWrapper {
+  width: 100%;
+  /* Fixed height — Recharts needs a defined height on its container */
+  height: 220px;
+}
+
+.loadingText {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 40px 0;
+}
+
+.emptyText {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 40px 0;
+}
