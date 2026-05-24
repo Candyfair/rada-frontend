@@ -114,10 +114,6 @@
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: -0.05em;
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .tagRemove {
@@ -179,6 +175,39 @@
   width: 100%;
   /* Fixed height — Recharts needs a defined height on its container */
   height: 220px;
+  position: relative;
+}
+
+.chartInner {
+  width: 100%;
+  height: 100%;
+  transition: filter 0.2s ease;
+}
+
+.chartInner.loading {
+  filter: blur(2px);
+  pointer-events: none;
+}
+
+.chartLoaderOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--color-toggle-bg);
+  border-top-color: var(--color-detail-text);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
 }
 
 .loadingText {

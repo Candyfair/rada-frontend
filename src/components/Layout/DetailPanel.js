@@ -39,20 +39,24 @@ export default function DetailPanel({
       ? "translateX(-50%)"
       : "translateX(-50%) translateY(150%)";
 
+  // Fade out when sliding to the left with the detail page
+  const opacity = isDetailOpen ? 0 : 1;
+
   // visibility stays "visible" as long as an asset is selected —
   // hidden only when no asset is selected AND the panel is fully gone.
   // The transition delay on visibility matches the slide duration
   // so it only hides after the animation completes.
   const visibility = selectedAsset ? "visible" : "hidden";
   const visibilityTransition = selectedAsset
-    ? "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s"
-    : "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s 0.35s";
+    ? "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease, visibility 0s"
+    : "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease, visibility 0s 0.35s";
 
   return (
     <div
       style={{
         ...styles.panel,
         transform,
+        opacity,
         visibility,
         transition: visibilityTransition,
       }}

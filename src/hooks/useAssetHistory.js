@@ -3,7 +3,8 @@
 import { useState, useCallback } from "react";
 import { API_BASE_URL } from "@/lib/constants";
 
-const DEFAULT_LIMIT = 288;
+// 5 hours at 10-minute intervals = 30 points
+const DEFAULT_LIMIT = 30;
 
 export function useAssetHistory() {
   const [histories, setHistories] = useState({});

@@ -205,8 +205,14 @@ export default function Home() {
 
         {/* ---- DETAIL PAGE — slides in from the right ---- */}
         <div style={{
-          ...styles.detailSlide,
+          position: "absolute",
+          inset: 0,
+          zIndex: 50,
+          transition: "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease",
           transform: isDetailOpen ? "translateX(0)" : "translateX(100%)",
+          opacity: isDetailOpen ? 1 : 0,
+          backgroundColor: "transparent",
+          pointerEvents: isDetailOpen ? "auto" : "none",
         }}>
           <AssetDetailPage
             asset={selectedAsset}
@@ -222,7 +228,7 @@ export default function Home() {
 
         {/* ---- STATS MODAL ---- */}
         <StatsModal
-          assetId={isDetailOpen ? selectedAsset?.id ?? null : null}
+          assetId={selectedAsset?.id ?? null}
           assets={assets}
           isOpen={isStatsOpen}
           onClose={() => setIsStatsOpen(false)}
@@ -264,14 +270,6 @@ const styles = {
     WebkitBackdropFilter: "blur(6px)",
     zIndex: 45,
     transition: "opacity 0.35s ease",
-    backgroundColor: "transparent",
-  },
-
-  detailSlide: {
-    position: "absolute",
-    inset: 0,
-    zIndex: 50,
-    transition: "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
     backgroundColor: "transparent",
   },
 

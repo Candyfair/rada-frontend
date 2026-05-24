@@ -11,15 +11,18 @@ import {
 import { format, parseISO } from "date-fns";
 import { ChevronDown, X } from "lucide-react";
 import { useAssetHistory } from "@/hooks/useAssetHistory";
-import styles from "./BatteryComparisonChart.module.css";
+import styles from "./AssetComparisonChart.module.css";
 
 // Metrics available for Y axis — label shown in the UI, key in the record object,
 // and unit displayed on the axis
 const METRICS = [
-  { key: "power_mw",            label: "Power",        unit: "MW"  },
-  { key: "energy_mwh",          label: "Energy",       unit: "MWh" },
-  { key: "reactive_power_mvar", label: "Reactive",     unit: "MVAr"},
-  { key: "power_factor",        label: "Power factor", unit: "%"   },
+  { key: "power_mw",              label: "Power",           unit: "MW"  },
+  { key: "energy_mwh",            label: "Energy",          unit: "MWh" },
+  { key: "reactive_power_mvar",   label: "Reactive Power",  unit: "MVAr"},
+  { key: "power_factor",          label: "Power factor",    unit: "%"   },
+  { key: "temperature_celsius",  label: "Cell temperature",unit: "°C"  },
+  { key: "voltage",               label: "Voltage",         unit: "V"  },
+  { key: "current_amps",          label: "Current amps",    unit: "A" },
 ];
 
 // One distinct color per line — drawn from the existing design token palette
@@ -43,7 +46,22 @@ function bucketTimestamp(isoString) {
 
 // initialAssetId — pre-selected asset id or null
 // batteries      — array of battery assets from useAssets()
-export default function BatteryComparisonChart({ initialAssetId, batteries }) {
+export default function AssetComparisonChart({ initialAssetId, assets }) {
+  useEffect(() => {
+    if (assets?.length > 0) {
+      console.log("asset id type:", typeof assets[0].id, assets[0].id);
+    }
+  }, [assets]);
+
+  useEffect(() => {
+    if (initialAssetId != null) {
+      console.log("initialAssetId type:", typeof initialAssetId, initialAssetId);
+    }
+  }, [initialAssetId]);
+
+
+  const batteries = assets ?? [];
+
   const { histories, initAsset, reloadAsset, removeAsset } = useAssetHistory();
 
   const [selectedIds, setSelectedIds] = useState([]);
@@ -51,6 +69,7 @@ export default function BatteryComparisonChart({ initialAssetId, batteries }) {
   const [fromInput, setFromInput] = useState("");
   const [toInput, setToInput] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   const dropdownRef = useRef(null);
 
   // When the modal opens with a pre-selected asset, add it to selectedIds
@@ -98,11 +117,18 @@ export default function BatteryComparisonChart({ initialAssetId, batteries }) {
   // ------------------------------------------------------------------
   const handleAddBattery = useCallback((id) => {
     if (selectedIds.includes(id)) return;
-    const newIds = [...selectedIds, id];
-    setSelectedIds(newIds);
-    initAsset(id);
+    setSelectedIds((prev) => [...prev, id]);
+
+    // If a date range is already set, apply it to the new asset immediately
+    // instead of loading its default range
+    if (fromInput && toInput) {
+      reloadAsset(id, fromInput, toInput);
+    } else {
+      initAsset(id);
+    }
+
     setIsDropdownOpen(false);
-  }, [selectedIds, initAsset]);
+  }, [selectedIds, fromInput, toInput, initAsset, reloadAsset]);
 
   const handleRemoveBattery = useCallback((id) => {
     setSelectedIds((prev) => prev.filter((sid) => sid !== id));
@@ -151,7 +177,7 @@ export default function BatteryComparisonChart({ initialAssetId, batteries }) {
         const point = { timestamp: ts };
         selectedIds.forEach((id) => {
           // undefined becomes null so Recharts renders a gap instead of zero
-          point[id] = lookups[id][ts] ?? null;
+          point[String(id)] = lookups[id][ts] ?? null;
         });
         return point;
       });
@@ -160,14 +186,21 @@ export default function BatteryComparisonChart({ initialAssetId, batteries }) {
   const data = chartData();
   const isAnyLoading = selectedIds.some((id) => histories[id]?.isLoading);
 
-  // X axis — show only the time when within a single day, add the date otherwise
-  const formatXTick = (timestamp) => {
+  // Show date only when the day changes compared to the previous tick,
+  // otherwise show time only
+  const formatXTick = useCallback((timestamp, index, ticks) => {
     try {
-      return format(parseISO(timestamp), "HH:mm");
+      const current = parseISO(timestamp);
+      if (index === 0) return format(current, "dd/MM HH:mm");
+      const prev = parseISO(ticks[index - 1]?.value ?? "");
+      const dayChanged = format(current, "dd/MM") !== format(prev, "dd/MM");
+      return dayChanged
+        ? format(current, "dd/MM HH:mm")
+        : format(current, "HH:mm");
     } catch {
       return timestamp;
     }
-  };
+  }, []);
 
   // Tooltip label — full date and time
   const formatTooltipLabel = (timestamp) => {
@@ -226,7 +259,7 @@ export default function BatteryComparisonChart({ initialAssetId, batteries }) {
             <span className={styles.placeholder}>Select batteries...</span>
           )}
           {selectedIds.map((id) => {
-            const battery = batteries.find((b) => b.id === id);
+            const battery = batteries.find((b) => String(b.id) === String(id));
             return (
               <span key={id} className={styles.tag}>
                 {battery?.name ?? `Asset ${id}`}
@@ -254,7 +287,7 @@ export default function BatteryComparisonChart({ initialAssetId, batteries }) {
         {isDropdownOpen && (
           <div className={styles.dropdown}>
             {batteries.map((battery) => {
-              const isSelected = selectedIds.includes(battery.id);
+              const isSelected = selectedIds.map(String).includes(String(battery.id));
               return (
                 <div
                   key={battery.id}
@@ -281,12 +314,14 @@ export default function BatteryComparisonChart({ initialAssetId, batteries }) {
         <p className={styles.loadingText}>Loading data...</p>
       )}
 
-      {!isAnyLoading && selectedIds.length === 0 && (
-        <p className={styles.emptyText}>Select a battery to display the chart.</p>
+      {/* Show empty state only when no asset is selected and nothing is loading */}
+      {selectedIds.length === 0 && (
+        <p className={styles.emptyText}>Select an asset to display the chart.</p>
       )}
 
-      {!isAnyLoading && selectedIds.length > 0 && (
+      {selectedIds.length > 0 && (
         <div className={styles.chartWrapper}>
+        <div className={`${styles.chartInner} ${isAnyLoading ? styles.loading : ""}`}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={data}
@@ -294,7 +329,7 @@ export default function BatteryComparisonChart({ initialAssetId, batteries }) {
             >
               <XAxis
                 dataKey="timestamp"
-                tickFormatter={formatXTick}
+                tickFormatter={(value, index) => formatXTick(value, index, data.map(d => ({ value: d.timestamp })))}
                 tick={{ fontFamily: "var(--font-mono)", fontSize: 10 }}
                 tickLine={false}
                 axisLine={false}
@@ -321,16 +356,16 @@ export default function BatteryComparisonChart({ initialAssetId, batteries }) {
                   borderRadius: 6,
                 }}
                 formatter={(value, name) => {
-                  const battery = batteries.find((b) => b.id === name);
+                  const battery = batteries.find((b) => String(b.id) === String(name));
                   const label = battery?.name ?? `Asset ${name}`;
                   return [`${value} ${activeMetric.unit}`, label];
                 }}
               />
               {selectedIds.map((id, index) => (
                 <Line
-                  key={id}
+                  key={String(id)}
                   type="monotone"
-                  dataKey={id}
+                  dataKey={String(id)}
                   stroke={LINE_COLORS[index % LINE_COLORS.length]}
                   strokeWidth={2}
                   dot={false}
@@ -342,7 +377,14 @@ export default function BatteryComparisonChart({ initialAssetId, batteries }) {
             </LineChart>
           </ResponsiveContainer>
         </div>
+
+      {isAnyLoading && (
+        <div className={styles.chartLoaderOverlay}>
+          <div className={styles.spinner} />
+        </div>
       )}
+    </div>
+  )}
 
     </div>
   );
