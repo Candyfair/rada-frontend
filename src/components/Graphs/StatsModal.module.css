@@ -1,0 +1,97 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  background-color: hsla(var(--hsl-background), 0.3);
+  /* Fade in when visible, fade out when not */
+  transition: opacity 0.3s ease;
+}
+
+.overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+[data-theme="dark"] .overlay {
+  background-color: hsla(var(--hsl-background-dark), 0.3);
+}
+
+.sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 101;
+  max-height: 90dvh;
+  border-radius: 16px 16px 0 0;
+  background-color: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+  /* Slide up when entering, slide down when leaving */
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.sheet.hidden {
+  transform: translateY(100%);
+}
+
+.handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background-color: var(--color-toggle-bg);
+  margin: 12px auto 0;
+  flex-shrink: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  flex-shrink: 0;
+}
+
+.title {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Tap target minimum 44px for iOS */
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.scrollContent {
+  overflow-y: auto;
+  flex: 1;
+  padding: 0 20px 40px;
+  /* Smooth momentum scroll on iOS */
+  -webkit-overflow-scrolling: touch;
+}
+
+.section {
+  margin-bottom: 36px;
+}
+
+.sectionTitle {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-detail-text);
+  margin: 0 0 16px;
+}

@@ -12,6 +12,7 @@ import HomeHeader from "@/components/Layout/HomeHeader";
 import DetailPanel from "@/components/Layout/DetailPanel";
 import TotalPowerBadge from "@/components/Layout/TotalPowerBadge";
 import AssetDetailPage from "@/components/AssetDetail/AssetDetailPage";
+import StatsModal from "@/components/Graphs/StatsModal";
 
 export default function Home() {
   const { assets, loading, error } = useAssets();
@@ -26,6 +27,7 @@ export default function Home() {
   const [isLogoutMenuOpen, setIsLogoutMenuOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isDetailLogoutOpen, setIsDetailLogoutOpen] = useState(false);
+  const [isStatsOpen, setIsStatsOpen] = useState(false);
 
   // Hardcoded until the grid signal API is connected
   const TOTAL_POWER = 5000;
@@ -166,7 +168,7 @@ export default function Home() {
           theme={theme}
           isThemeSpinning={isThemeSpinning}
           onThemeToggle={handleThemeToggle}
-          onChartPress={() => {}}
+          onChartPress={() => setIsStatsOpen(true)}
           onSettingsPress={handleSettingsPress}
           isLogoutMenuOpen={isLogoutMenuOpen}
           onLogoutMenuClose={() => setIsLogoutMenuOpen(false)}
@@ -217,6 +219,14 @@ export default function Home() {
             onToggleLogout={() => setIsDetailLogoutOpen((prev) => !prev)}
           />
         </div>
+
+        {/* ---- STATS MODAL ---- */}
+        <StatsModal
+          assetId={isDetailOpen ? selectedAsset?.id ?? null : null}
+          assets={assets}
+          isOpen={isStatsOpen}
+          onClose={() => setIsStatsOpen(false)}
+        />
 
       </main>
     </>
