@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   LineChart,
   Line,
@@ -186,21 +186,49 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
   const data = chartData();
   const isAnyLoading = selectedIds.some((id) => histories[id]?.isLoading);
 
-  // Show date only when the day changes compared to the previous tick,
-  // otherwise show time only
-  const formatXTick = useCallback((timestamp, index, ticks) => {
+  // Build explicit tick positions: first point, one per day change, last point.
+  // This guarantees no duplicate day labels regardless of data density.
+  const xTicks = useMemo(() => {
+    if (data.length === 0) return [];
+
+    const ticks = [data[0].timestamp];
+    let lastDay = format(parseISO(data[0].timestamp), "yyyy-MM-dd");
+
+    for (let i = 1; i < data.length - 1; i++) {
+      const day = format(parseISO(data[i].timestamp), "yyyy-MM-dd");
+      if (day !== lastDay) {
+        ticks.push(data[i].timestamp);
+        lastDay = day;
+      }
+    }
+
+    // Add last point only if not already included
+    const lastTs = data[data.length - 1].timestamp;
+    if (lastTs !== ticks[ticks.length - 1]) {
+      ticks.push(lastTs);
+    }
+
+    return ticks;
+  }, [data]);
+
+  // Determine the total time range covered by the chart data, in hours
+  const totalHours = data.length > 1
+    ? (new Date(data[data.length - 1].timestamp) - new Date(data[0].timestamp))
+      / (1000 * 60 * 60)
+    : 0;
+
+  // Format a tick — date only when it's a day boundary, time only for first/last
+  const formatXTick = useCallback((timestamp) => {
     try {
       const current = parseISO(timestamp);
-      if (index === 0) return format(current, "dd/MM HH:mm");
-      const prev = parseISO(ticks[index - 1]?.value ?? "");
-      const dayChanged = format(current, "dd/MM") !== format(prev, "dd/MM");
-      return dayChanged
-        ? format(current, "dd/MM HH:mm")
-        : format(current, "HH:mm");
+      if (totalHours > 48) {
+        return format(current, "dd/MM");
+      }
+      return format(current, "dd/MM HH:mm");
     } catch {
       return timestamp;
     }
-  }, []);
+  }, [totalHours]);
 
   // Tooltip label — full date and time
   const formatTooltipLabel = (timestamp) => {
@@ -329,12 +357,12 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
             >
               <XAxis
                 dataKey="timestamp"
-                tickFormatter={(value, index) => formatXTick(value, index, data.map(d => ({ value: d.timestamp })))}
+                ticks={xTicks}
+                tickFormatter={formatXTick}
                 tick={{ fontFamily: "var(--font-mono)", fontSize: 10 }}
                 tickLine={false}
                 axisLine={false}
-                // Show only a limited number of ticks to avoid overcrowding
-                interval="preserveStartEnd"
+                interval={0}
               />
               <YAxis
                 tickFormatter={formatYTick}
