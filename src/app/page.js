@@ -182,6 +182,11 @@ export default function Home() {
           isDetailOpen={isDetailOpen}
           onDismiss={handleDismiss}
           onOpenDetail={handleOpenDetail}
+          onOpenStats={() => {
+            if (selectedAsset) {
+              setIsStatsOpen(true);
+            }}
+          }       
         />
 
         {/* ---- FILTER MODAL ---- */}

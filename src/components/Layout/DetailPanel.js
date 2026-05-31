@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowRight, X } from "lucide-react";
+import { ArrowRight, X, ChartColumnBig } from "lucide-react";
 import { getModeColor, getStatusColor, getValueColor } from "@/lib/assetUtils";
 
 // DetailPanel — slide-up panel showing summary data for the selected asset.
@@ -20,6 +20,7 @@ export default function DetailPanel({
   isDetailOpen,
   onDismiss,
   onOpenDetail,
+  onOpenStats,
 }) {
 
   // Keep the last selected asset in memory so the panel content
@@ -126,15 +127,25 @@ export default function DetailPanel({
             </div>
           </div>
 
-          {/* View details button — bottom right per Figma */}
-          <button
-            style={styles.detailButton}
-            onClick={onOpenDetail}
-            aria-label="View asset details"
-          >
-            View details
-            <ArrowRight size={14} style={{ marginLeft: 6 }} />
-          </button>
+          {/* Bottom action row — stats icon + view details */}
+          <div style={styles.bottomActions}>
+            <button
+              style={styles.statsButton}
+              onClick={onOpenStats}
+              aria-label="Open stats for this asset"
+            >
+              <ChartColumnBig size={16} />
+            </button>
+
+            <button
+              style={styles.detailButton}
+              onClick={onOpenDetail}
+              aria-label="View asset details"
+            >
+              View details
+              <ArrowRight size={14} style={{ marginLeft: 6 }} />
+            </button>
+          </div>
         </>
       )}
     </div>
@@ -222,11 +233,21 @@ const styles = {
     gap: 8,
   },
 
+  bottomActions: {
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",  
+    gap: 8,                   
+    position: "absolute",
+    bottom: -50,
+    right: 0,
+    },
+
   detailButton: {
     display: "flex",
     flexDirection: "row",
     alignItems: "center",
-    alignSelf: "flex-end",
     backgroundColor: "var(--color-detail-btn-bg)",
     color: "var(--color-detail-btn-text)",
     border: "solid 1px var(--color-icon)",
@@ -239,9 +260,19 @@ const styles = {
     paddingRight: 18,
     borderRadius: 12,
     letterSpacing: 0.3,
-    position: "absolute",
-    bottom: -50,
-    right: 0,
+  },
+
+  statsButton: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "var(--color-detail-btn-bg)",
+    color: "var(--color-detail-btn-text)",
+    border: "solid 1px var(--color-icon)",
+    cursor: "pointer",
+    width: 42,
+    height: 42,
+    borderRadius: 12,
   },
 
   detailRow: {
@@ -262,4 +293,6 @@ const styles = {
     fontWeight: "600",
     color: "var(--color-panel-value)",
   },
+
+
 };

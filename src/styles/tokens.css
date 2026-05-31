@@ -98,6 +98,10 @@
 
   /* Detail page text */
   --color-detail-text:       hsl(351, 35%, 30%);
+
+  /* Stats */
+  --color-input-bg: hsl(0, 0%, 100%);
+  --color-chip-text: var(--color-icon);
 }
 
 /* ---- Dark theme ---- */
@@ -119,6 +123,9 @@
 
   /* Muted text */
   --color-text-muted:      hsl(200, 10%, 55%);
+
+  /* Stats */
+  --color-input-bg: hsla(0, 0%, 100%, 0.30);
 }
 
 body {
