@@ -87,24 +87,30 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
   // When the first asset's data loads, populate the date inputs
   // with the actual from_ts / to_ts returned by the API
   useEffect(() => {
-    if (selectedIds.length === 0) return;
-    const firstHistory = histories[selectedIds[0]];
-    if (!firstHistory?.fromTs || fromInput !== "") return;
+  if (selectedIds.length === 0) return;
+  const firstHistory = histories[selectedIds[0]];
 
-    // from_ts and to_ts from the API are UTC without offset —
-    // convert to Paris time for display in the datetime-local inputs
-    const toLocalInput = (isoString) => {
-      if (!isoString) return "";
-      const date = new Date(isoString + "Z");
-      // Guard against invalid dates before converting
-      if (isNaN(date.getTime())) return "";
-      const parisDate = toZonedTime(date, TIMEZONE);
-      return formatTz(parisDate, "yyyy-MM-dd'T'HH:mm", { timeZone: TIMEZONE });
-    };
+  // Wait until data has loaded and fromTs is available
+  if (!firstHistory || firstHistory.isLoading || !firstHistory.fromTs) return;
 
-    setFromInput(toLocalInput(firstHistory.fromTs));
-    setToInput(toLocalInput(firstHistory.toTs));
-  }, [histories, selectedIds]);
+  const toLocalInput = (isoString) => {
+    if (!isoString) return "";
+    // from_ts and to_ts are UTC without suffix — append Z before parsing
+    const date = new Date(isoString.includes("Z") || isoString.includes("+")
+      ? isoString
+      : isoString + "Z"
+    );
+    if (isNaN(date.getTime())) return "";
+    const parisDate = toZonedTime(date, TIMEZONE);
+    return formatTz(parisDate, "yyyy-MM-dd'T'HH:mm", { timeZone: TIMEZONE });
+  };
+
+  setFromInput(toLocalInput(firstHistory.fromTs));
+  setToInput(toLocalInput(firstHistory.toTs));
+
+  // Re-run whenever the first asset's history updates —
+  // including after a date range reload
+}, [histories, selectedIds]);
 
    useEffect(() => {
     function handleOutsideClick(e) {
