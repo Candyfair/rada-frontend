@@ -46,11 +46,13 @@ export default function StatsModal({ assetId, assets, isOpen, onClose }) {
           <div className={styles.section}>
             {/* key forces a full remount each time the modal opens,
                 which resets all state inside AssetComparisonChart */}
-            <AssetComparisonChart
-              key={mountKeyRef.current}
-              initialAssetId={assetId}
-              assets={assets}
-            />
+            {isOpen && (
+              <AssetComparisonChart
+                key={mountKeyRef.current}
+                initialAssetId={assetId}
+                assets={assets}
+              />
+            )}
           </div>
         </div>
       </div>

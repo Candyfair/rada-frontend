@@ -12,6 +12,9 @@ import { format, parseISO } from "date-fns";
 import { ChevronDown, X } from "lucide-react";
 import { useAssetHistory } from "@/hooks/useAssetHistory";
 import styles from "./AssetComparisonChart.module.css";
+import { toZonedTime, format as formatTz } from "date-fns-tz";
+
+const TIMEZONE = "Europe/Paris";
 
 // Metrics available for Y axis — label shown in the UI, key in the record object,
 // and unit displayed on the axis
@@ -34,14 +37,15 @@ const LINE_COLORS = [
   "hsl(217, 89%, 61%)", // --color-value-negative (blue)
 ];
 
-// Round a timestamp string to the nearest 10-minute bucket.
-// "2026-04-03T19:20:58" → "2026-04-03T19:20:00"
+// Convert a UTC timestamp to Paris time, then round to nearest 10-minute bucket.
+// This ensures records from different assets align on the same X axis
+// regardless of sub-minute recording offsets.
 function bucketTimestamp(isoString) {
-  const date = new Date(isoString);
-  const minutes = date.getMinutes();
-  const bucketed = new Date(date);
-  bucketed.setMinutes(Math.round(minutes / 10) * 10, 0, 0);
-  return bucketed.toISOString();
+  const parisDate = toZonedTime(new Date(isoString), TIMEZONE);
+  const minutes = parisDate.getMinutes();
+  parisDate.setMinutes(Math.round(minutes / 10) * 10, 0, 0);
+  // Return a plain ISO-like string without offset for consistent key usage
+  return formatTz(parisDate, "yyyy-MM-dd'T'HH:mm:ss", { timeZone: TIMEZONE });
 }
 
 // initialAssetId — pre-selected asset id or null
@@ -87,9 +91,16 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
     const firstHistory = histories[selectedIds[0]];
     if (!firstHistory?.fromTs || fromInput !== "") return;
 
-    // datetime-local inputs expect the format "YYYY-MM-DDTHH:mm"
-    const toLocalInput = (isoString) =>
-      isoString ? isoString.slice(0, 16) : "";
+    // from_ts and to_ts from the API are UTC without offset —
+    // convert to Paris time for display in the datetime-local inputs
+    const toLocalInput = (isoString) => {
+      if (!isoString) return "";
+      const date = new Date(isoString + "Z");
+      // Guard against invalid dates before converting
+      if (isNaN(date.getTime())) return "";
+      const parisDate = toZonedTime(date, TIMEZONE);
+      return formatTz(parisDate, "yyyy-MM-dd'T'HH:mm", { timeZone: TIMEZONE });
+    };
 
     setFromInput(toLocalInput(firstHistory.fromTs));
     setToInput(toLocalInput(firstHistory.toTs));
@@ -138,8 +149,16 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
   // Apply the date range to all currently selected assets
   const handleApplyDateRange = useCallback(() => {
     if (!fromInput || !toInput) return;
+
+    // datetime-local inputs return Paris local time — convert back to UTC ISO
+    // before sending to the API which expects UTC
+    const toUtcIso = (localDateTimeString) => {
+      const parisDate = toZonedTime(new Date(localDateTimeString), TIMEZONE);
+      return parisDate.toISOString();
+    };
+
     selectedIds.forEach((id) => {
-      reloadAsset(id, fromInput, toInput);
+      reloadAsset(id, toUtcIso(fromInput), toUtcIso(toInput));
     });
   }, [fromInput, toInput, selectedIds, reloadAsset]);
 
@@ -233,40 +252,23 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
   }, [data, totalHours]);
 
   // Format a tick — date only when it's a day boundary, time only for first/last
-  const formatXTick = useCallback((timestamp, index) => {
+  const formatXTick = useCallback((timestamp) => {
     try {
-      const current = parseISO(timestamp);
-
+      const parisDate = toZonedTime(new Date(timestamp), TIMEZONE);
       if (totalHours > 24) {
-        // Dates only — no time
-        return format(current, "dd/MM");
+        return formatTz(parisDate, "dd/MM", { timeZone: TIMEZONE });
       }
-
-      if (totalHours > 5) {
-        // First tick and day changes show date + hour,
-        // all other ticks show hour only
-        const isFirst = index === 0;
-        const isNewDay = index > 0 && format(current, "dd/MM") !== format(
-          parseISO(xTicks[index - 1] ?? ""),
-          "dd/MM"
-        );
-        return (isFirst || isNewDay)
-          ? format(current, "dd/MM HH:00")
-          : format(current, "HH:00");
-      }
-
-      // Default short range — hours only
-      return format(current, "HH:00");
-
+      return formatTz(parisDate, "HH:00", { timeZone: TIMEZONE });
     } catch {
       return timestamp;
     }
-  }, [totalHours, xTicks]);
+  }, [totalHours]);
 
   // Tooltip label — full date and time
   const formatTooltipLabel = (timestamp) => {
     try {
-      return format(parseISO(timestamp), "dd MMM HH:mm");
+      const parisDate = toZonedTime(new Date(timestamp), TIMEZONE);
+      return formatTz(parisDate, "dd MMM HH:mm", { timeZone: TIMEZONE });
     } catch {
       return timestamp;
     }
