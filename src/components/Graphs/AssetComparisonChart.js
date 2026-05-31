@@ -375,6 +375,9 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
                 tickLine={false}
                 axisLine={false}
                 interval={0}
+                angle={-35}
+                textAnchor="end"
+                height={50}
               />
               <YAxis
                 tickFormatter={formatYTick}
