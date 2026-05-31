@@ -111,7 +111,14 @@
   --color-bg-header:       hsla(var(--hsl-background-dark), 0.3);
   --color-icon:            hsl(var(--hsl-background));
 
+  /* Text */
+  --color-text-secondary:  hsl(var(--hsl-background));
+
   /* Panel is identical in both themes — no overrides needed */
+
+  /* Detail link button */
+  --color-detail-btn-bg:   hsl(var(--hsl-background));    
+  --color-detail-btn-text: hsl(var(--hsl-text-primary));
 
   /* Icons visible on dark background */
   --color-icon:            hsl(var(--hsl-background));
@@ -125,7 +132,7 @@
   --color-text-muted:      hsl(200, 10%, 55%);
 
   /* Stats */
-  --color-input-bg: hsla(0, 0%, 100%, 0.30);
+  --color-input-bg: hsla(var(--hsl-background), 0.8);
 }
 
 body {

@@ -392,9 +392,10 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
                   fontFamily: "var(--font-mono)",
                   fontSize: 11,
                   backgroundColor: "var(--color-bg)",
-                  border: "1px solid var(--color-panel-border)",
+                  border: "1px solid var(--color-icon)",
                   borderRadius: 6,
                 }}
+                labelStyle={{ color: "var(--color-text-secondary)" }}
                 formatter={(value, name) => {
                   const battery = batteries.find((b) => String(b.id) === String(name));
                   const label = battery?.name ?? `Asset ${name}`;

@@ -62,7 +62,7 @@
   font-family: var(--font-serif);
   font-size: 18px;
   font-weight: 500;
-  color: var(--color-text-primary);
+  color: var(--color-text-secondary);
   margin: 0;
 }
 
@@ -71,7 +71,7 @@
   border: none;
   padding: 4px;
   cursor: pointer;
-  color: var(--color-text-primary);
+  color: var(--color-icon);
   display: flex;
   align-items: center;
   justify-content: center;

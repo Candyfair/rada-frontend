@@ -134,7 +134,7 @@ export default function DetailPanel({
               onClick={onOpenStats}
               aria-label="Open stats for this asset"
             >
-              <ChartColumnBig size={16} />
+              <ChartColumnBig size={20} />
             </button>
 
             <button
@@ -248,8 +248,8 @@ const styles = {
     display: "flex",
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "var(--color-detail-btn-bg)",
-    color: "var(--color-detail-btn-text)",
+    backgroundColor: "var(--color-panel-row-bg)",
+    color: "var(--color-panel-value)",
     border: "solid 1px var(--color-icon)",
     cursor: "pointer",
     fontWeight: "700",
@@ -266,8 +266,8 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "var(--color-detail-btn-bg)",
-    color: "var(--color-detail-btn-text)",
+    backgroundColor: "var(--color-panel-row-bg)",
+    color: "var(--color-panel-value)",
     border: "solid 1px var(--color-icon)",
     cursor: "pointer",
     width: 42,
