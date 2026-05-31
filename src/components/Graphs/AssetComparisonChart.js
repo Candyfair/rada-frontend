@@ -12,9 +12,7 @@ import { format, parseISO } from "date-fns";
 import { ChevronDown, X } from "lucide-react";
 import { useAssetHistory } from "@/hooks/useAssetHistory";
 import styles from "./AssetComparisonChart.module.css";
-import { toZonedTime, format as formatTz } from "date-fns-tz";
-
-const TIMEZONE = "Europe/Paris";
+import { parisInputToUtcIso, utcToParisInput, utcToParisDate, formatParisDate, formatZonedToIsoString } from "@/lib/dateUtils";
 
 // Metrics available for Y axis — label shown in the UI, key in the record object,
 // and unit displayed on the axis
@@ -41,11 +39,10 @@ const LINE_COLORS = [
 // This ensures records from different assets align on the same X axis
 // regardless of sub-minute recording offsets.
 function bucketTimestamp(isoString) {
-  const parisDate = toZonedTime(new Date(isoString), TIMEZONE);
+  const parisDate = utcToParisDate(isoString);
   const minutes = parisDate.getMinutes();
   parisDate.setMinutes(Math.round(minutes / 10) * 10, 0, 0);
-  // Return a plain ISO-like string without offset for consistent key usage
-  return formatTz(parisDate, "yyyy-MM-dd'T'HH:mm:ss", { timeZone: TIMEZONE });
+  return formatZonedToIsoString(parisDate);
 }
 
 // initialAssetId — pre-selected asset id or null
@@ -87,30 +84,13 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
   // When the first asset's data loads, populate the date inputs
   // with the actual from_ts / to_ts returned by the API
   useEffect(() => {
-  if (selectedIds.length === 0) return;
-  const firstHistory = histories[selectedIds[0]];
+    if (selectedIds.length === 0) return;
+    const firstHistory = histories[selectedIds[0]];
+    if (!firstHistory || firstHistory.isLoading || !firstHistory.fromTs) return;
 
-  // Wait until data has loaded and fromTs is available
-  if (!firstHistory || firstHistory.isLoading || !firstHistory.fromTs) return;
-
-  const toLocalInput = (isoString) => {
-    if (!isoString) return "";
-    // from_ts and to_ts are UTC without suffix — append Z before parsing
-    const date = new Date(isoString.includes("Z") || isoString.includes("+")
-      ? isoString
-      : isoString + "Z"
-    );
-    if (isNaN(date.getTime())) return "";
-    const parisDate = toZonedTime(date, TIMEZONE);
-    return formatTz(parisDate, "yyyy-MM-dd'T'HH:mm", { timeZone: TIMEZONE });
-  };
-
-  setFromInput(toLocalInput(firstHistory.fromTs));
-  setToInput(toLocalInput(firstHistory.toTs));
-
-  // Re-run whenever the first asset's history updates —
-  // including after a date range reload
-}, [histories, selectedIds]);
+    setFromInput(utcToParisInput(firstHistory.fromTs));
+    setToInput(utcToParisInput(firstHistory.toTs));
+  }, [histories, selectedIds]);
 
    useEffect(() => {
     function handleOutsideClick(e) {
@@ -134,12 +114,13 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
   // ------------------------------------------------------------------
   const handleAddBattery = useCallback((id) => {
     if (selectedIds.includes(id)) return;
-    setSelectedIds((prev) => [...prev, id]);
+    const newIds = [...selectedIds, id];
+    setSelectedIds(newIds);
 
-    // If a date range is already set, apply it to the new asset immediately
-    // instead of loading its default range
     if (fromInput && toInput) {
-      reloadAsset(id, fromInput, toInput);
+      newIds.forEach((assetId) => {
+        reloadAsset(assetId, parisInputToUtcIso(fromInput), parisInputToUtcIso(toInput));
+      });
     } else {
       initAsset(id);
     }
@@ -155,16 +136,8 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
   // Apply the date range to all currently selected assets
   const handleApplyDateRange = useCallback(() => {
     if (!fromInput || !toInput) return;
-
-    // datetime-local inputs return Paris local time — convert back to UTC ISO
-    // before sending to the API which expects UTC
-    const toUtcIso = (localDateTimeString) => {
-      const parisDate = toZonedTime(new Date(localDateTimeString), TIMEZONE);
-      return parisDate.toISOString();
-    };
-
     selectedIds.forEach((id) => {
-      reloadAsset(id, toUtcIso(fromInput), toUtcIso(toInput));
+      reloadAsset(id, parisInputToUtcIso(fromInput), parisInputToUtcIso(toInput));
     });
   }, [fromInput, toInput, selectedIds, reloadAsset]);
 
@@ -260,21 +233,19 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
   // Format a tick — date only when it's a day boundary, time only for first/last
   const formatXTick = useCallback((timestamp) => {
     try {
-      const parisDate = toZonedTime(new Date(timestamp), TIMEZONE);
-      if (totalHours > 24) {
-        return formatTz(parisDate, "dd/MM", { timeZone: TIMEZONE });
-      }
-      return formatTz(parisDate, "HH:00", { timeZone: TIMEZONE });
+      const d = parseISO(timestamp);
+      if (totalHours > 24) return format(d, "dd/MM");
+      return format(d, "HH:00");
     } catch {
       return timestamp;
     }
   }, [totalHours]);
 
+
   // Tooltip label — full date and time
   const formatTooltipLabel = (timestamp) => {
     try {
-      const parisDate = toZonedTime(new Date(timestamp), TIMEZONE);
-      return formatTz(parisDate, "dd MMM HH:mm", { timeZone: TIMEZONE });
+      return format(parseISO(timestamp), "dd MMM HH:mm");
     } catch {
       return timestamp;
     }
