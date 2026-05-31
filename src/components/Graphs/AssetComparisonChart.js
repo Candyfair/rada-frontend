@@ -186,49 +186,82 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
   const data = chartData();
   const isAnyLoading = selectedIds.some((id) => histories[id]?.isLoading);
 
-  // Build explicit tick positions: first point, one per day change, last point.
-  // This guarantees no duplicate day labels regardless of data density.
-  const xTicks = useMemo(() => {
-    if (data.length === 0) return [];
-
-    const ticks = [data[0].timestamp];
-    let lastDay = format(parseISO(data[0].timestamp), "yyyy-MM-dd");
-
-    for (let i = 1; i < data.length - 1; i++) {
-      const day = format(parseISO(data[i].timestamp), "yyyy-MM-dd");
-      if (day !== lastDay) {
-        ticks.push(data[i].timestamp);
-        lastDay = day;
-      }
-    }
-
-    // Add last point only if not already included
-    const lastTs = data[data.length - 1].timestamp;
-    if (lastTs !== ticks[ticks.length - 1]) {
-      ticks.push(lastTs);
-    }
-
-    return ticks;
-  }, [data]);
-
   // Determine the total time range covered by the chart data, in hours
   const totalHours = data.length > 1
     ? (new Date(data[data.length - 1].timestamp) - new Date(data[0].timestamp))
       / (1000 * 60 * 60)
     : 0;
 
+  // Build explicit tick positions: first point, one per day change, last point.
+  // This guarantees no duplicate day labels regardless of data density.
+  const xTicks = useMemo(() => {
+    if (data.length === 0) return [];
+
+    if (totalHours > 24) {
+      // One tick per day change + first and last point
+      const ticks = [data[0].timestamp];
+      let lastDay = format(parseISO(data[0].timestamp), "yyyy-MM-dd");
+
+      for (let i = 1; i < data.length - 1; i++) {
+        const day = format(parseISO(data[i].timestamp), "yyyy-MM-dd");
+        if (day !== lastDay) {
+          ticks.push(data[i].timestamp);
+          lastDay = day;
+        }
+      }
+
+      const lastTs = data[data.length - 1].timestamp;
+      if (lastTs !== ticks[ticks.length - 1]) ticks.push(lastTs);
+      return ticks;
+
+    } else {
+      // One tick per full hour — find data points closest to each hour boundary
+      const ticks = [];
+      let lastHour = null;
+
+      for (const point of data) {
+        const date = parseISO(point.timestamp);
+        const hour = format(date, "yyyy-MM-dd HH");
+        if (hour !== lastHour) {
+          ticks.push(point.timestamp);
+          lastHour = hour;
+        }
+      }
+
+      return ticks;
+    }
+  }, [data, totalHours]);
+
   // Format a tick — date only when it's a day boundary, time only for first/last
-  const formatXTick = useCallback((timestamp) => {
+  const formatXTick = useCallback((timestamp, index) => {
     try {
       const current = parseISO(timestamp);
-      if (totalHours > 48) {
+
+      if (totalHours > 24) {
+        // Dates only — no time
         return format(current, "dd/MM");
       }
-      return format(current, "dd/MM HH:mm");
+
+      if (totalHours > 5) {
+        // First tick and day changes show date + hour,
+        // all other ticks show hour only
+        const isFirst = index === 0;
+        const isNewDay = index > 0 && format(current, "dd/MM") !== format(
+          parseISO(xTicks[index - 1] ?? ""),
+          "dd/MM"
+        );
+        return (isFirst || isNewDay)
+          ? format(current, "dd/MM HH:00")
+          : format(current, "HH:00");
+      }
+
+      // Default short range — hours only
+      return format(current, "HH:00");
+
     } catch {
       return timestamp;
     }
-  }, [totalHours]);
+  }, [totalHours, xTicks]);
 
   // Tooltip label — full date and time
   const formatTooltipLabel = (timestamp) => {
@@ -358,7 +391,7 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
               <XAxis
                 dataKey="timestamp"
                 ticks={xTicks}
-                tickFormatter={formatXTick}
+                tickFormatter={(value, index) => formatXTick(value, index)}
                 tick={{ fontFamily: "var(--font-mono)", fontSize: 10 }}
                 tickLine={false}
                 axisLine={false}

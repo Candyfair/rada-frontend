@@ -1,5 +1,3 @@
-// src/hooks/useAssetHistory.js
-
 import { useState, useCallback } from "react";
 import { API_BASE_URL } from "@/lib/constants";
 
@@ -23,11 +21,17 @@ export function useAssetHistory() {
     }));
 
     try {
-      let url = `${API_BASE_URL}/assets/${assetId}/soc?mode=D&limit=${DEFAULT_LIMIT}`;
+      let url = `${API_BASE_URL}/assets/${assetId}/soc?mode=D`;
 
-      // Append optional date range parameters when provided
-      if (fromTimestamp) url += `&from_ts=${encodeURIComponent(fromTimestamp)}`;
-      if (toTimestamp) url += `&to_ts=${encodeURIComponent(toTimestamp)}`;
+      if (fromTimestamp && toTimestamp) {
+        // Date range provided — let the API determine the appropriate resolution
+        // Do not pass a limit so the backend returns all points for this range
+        url += `&from_ts=${encodeURIComponent(fromTimestamp)}`;
+        url += `&to_ts=${encodeURIComponent(toTimestamp)}`;
+      } else {
+        // Initial load without dates — limit to last 30 points (approx. 5 hours)
+        url += `&limit=${DEFAULT_LIMIT}`;
+      }
 
       const response = await fetch(url);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -35,14 +39,20 @@ export function useAssetHistory() {
 
       const records = data.records ?? [];
 
-      // Sort ascending by timestamp so Recharts receives chronological data
-      records.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      // Strip timezone suffix from timestamps so date-fns treats them
+      // as local time, consistent with from_ts / to_ts from the API
+      const normalizedRecords = records.map((r) => ({
+        ...r,
+        timestamp: r.timestamp.slice(0, 19),
+      }));
+
+      normalizedRecords.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
       // Replace existing records entirely — date range changes are not incremental
       setHistories((prev) => ({
         ...prev,
         [assetId]: {
-          records,
+          records: normalizedRecords,
           fromTs: data.from_ts ?? null,
           toTs: data.to_ts ?? null,
           isLoading: false,
@@ -63,13 +73,20 @@ export function useAssetHistory() {
   }, []);
 
   // Initial load for an asset — called when an asset is added to the comparison
-  const initAsset = useCallback(
-    (assetId) => {
-      if (histories[assetId]?.records?.length > 0) return;
-      fetchRecords(assetId);
-    },
-    [histories, fetchRecords]
-  );
+  const initAsset = useCallback((assetId) => {
+    if (histories[assetId]?.records?.length > 0) return;
+
+    // Compute default 5-hour window from current time
+    const now = new Date();
+    const fiveHoursAgo = new Date(now.getTime() - 5 * 60 * 60 * 1000);
+
+    // Format as "YYYY-MM-DDTHH:mm:ss" without timezone suffix
+    // The backend expects local-style ISO strings without offset
+    const toTs = now.toISOString().slice(0, 19);
+    const fromTs = fiveHoursAgo.toISOString().slice(0, 19);
+
+    fetchRecords(assetId, fromTs, toTs);
+  }, [histories, fetchRecords]);
 
   // Reload an asset's data for a specific date range (driven by the date picker)
   const reloadAsset = useCallback(
