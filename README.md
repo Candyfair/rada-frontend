@@ -1,6 +1,6 @@
 # Grid Asset Manager — Frontend
 
-A mobile-first React interface for monitoring and interacting with a grid-scale battery energy storage fleet. Built as the frontend counterpart to the **Grid Asset Manager backend** developed by [Christian Baker](https://github.com/roadtowiganpier).
+A mobile-first React interface for monitoring a fleet of grid-scale energy assets (batteries, solar farms, wind turbines). Built as the frontend counterpart to the **[Grid Asset Manager backend](https://github.com/roadtowiganpier/grid-asset-manager)** developed by [Christian Baker](https://github.com/roadtowiganpier).
 
 ---
 
@@ -8,10 +8,12 @@ A mobile-first React interface for monitoring and interacting with a grid-scale 
 
 This application provides:
 
-- **Fleet dashboard** — visual overview of all assets with real-time state-of-charge, telemetry, and dispatch status
-- **Asset detail view** — per-asset data including voltage, current, temperature, and command history
-- **Grid signal panel** — live French grid data sourced from the RTE API (generation mix, imbalance, FCR activation)
-- **Natural language interface** — ask questions about the fleet in plain text, powered by Mistral via the backend streaming endpoint
+- **Fleet dashboard** — interactive D3 bubble chart visualising all assets with real-time state-of-charge, operational mode, and dispatch status
+- **Asset detail panel** — per-asset data including power, energy, voltage, current, temperature, and operational mode; slides up on bubble tap
+- **Stats modal** — historical charts (Recharts) with asset comparison, configurable time range, and timezone-aware display (Europe/Paris)
+- **Asset filtering** — filter the fleet by asset type (battery, solar, wind) with live metric toggle
+- **Total power badge** — fleet-wide aggregated power output, updated per active filter
+- **Dark mode** — full theme switching with CSS custom properties and localStorage persistence
 - **Touch-optimised navigation** — designed for mobile devices, fully operable without a keyboard
 
 ---
@@ -20,21 +22,30 @@ This application provides:
 
 | Layer | Choice |
 |---|---|
-| Framework | Next.js (React) |
+| Framework | Next.js (App Router) |
 | Language | JavaScript |
-| Routing | Next App Router |
-| HTTP | Fetch API |
-| Styling | TBD |
+| Visualisation | D3.js (force simulation) |
+| Charts | Recharts |
+| Icons | Lucide React |
+| Styling | CSS Modules + CSS custom properties |
+| Fonts | Roboto Mono, Spectral (self-hosted, GDPR-compliant) |
+| Deployment | Vercel |
+
+---
+
+## Architecture
+
+All API calls are routed through **Next.js API Routes** acting as a server-side proxy. The backend API key is never exposed to the browser — it is injected server-side via environment variables before each request is forwarded to the VPS.
+
+```
+Browser  →  Vercel API Routes (/api/*)  →  Backend VPS
+```
 
 ---
 
 ## Prerequisites
 
-The backend must be running locally before starting the frontend. By default, the API is expected at:
-
-```
-http://127.0.0.1:8000
-```
+The backend must be accessible (locally or via network) before the frontend will return data. The API base URL and key are configured via environment variables — see below.
 
 ---
 
@@ -42,8 +53,8 @@ http://127.0.0.1:8000
 
 ```bash
 # Clone the repository
-git clone git@github.com:Candyfair/bess-frontend.git
-cd bess-frontend
+git clone https://github.com/Candyfair/grid-asset-manager-frontend.git
+cd grid-asset-manager-frontend
 
 # Install dependencies
 npm install
@@ -56,23 +67,38 @@ npm run dev
 
 ## Environment Variables
 
-Create a `.env` file at the project root:
+Create a `.env.local` file at the project root:
 
 ```
-NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
+API_BASE_URL=http://your-backend-url
+API_KEY=your-api-key
 ```
+
+> **Important:** these variables have no `NEXT_PUBLIC_` prefix. They are server-only and never injected into the browser bundle.
+
+---
+
+## API Routes (Proxy)
+
+All browser-facing API calls hit Next.js routes under `src/app/api/`. Each route injects the `X-API-Key` header and forwards the request to the backend.
+
+| Route | Proxies to | Usage |
+|---|---|---|
+| `GET /api/assets` | `GET /assetslist` | Full asset fleet list |
+| `GET /api/summary` | `GET /assets/summary` | Fleet-wide power and energy totals |
+| `GET /api/asset-history` | `GET /assets/{id}/soc` | Single asset SoC — latest (`mode=S`) or history (`mode=D`) |
 
 ---
 
 ## Backend API Reference
 
-The frontend consumes the following endpoints:
+The proxy routes forward to the following backend endpoints:
 
-| Method | Endpoint | Usage |
+| Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/health` | API status check on app load |
-| `GET` | `/assetslist` | Full asset fleet list |
-| `POST` | `/llm/ask` | Streamed natural language query |
+| `GET` | `/assetslist` | All assets with latest StateOfCharge joined |
+| `GET` | `/assets/summary` | Fleet totals broken down by asset type |
+| `GET` | `/assets/{id}/soc` | Single asset SoC — `mode=S` (latest) or `mode=D` (history with optional `from_ts` / `to_ts`) |
 
 ---
 
@@ -80,12 +106,47 @@ The frontend consumes the following endpoints:
 
 ```
 src/
-├── components/       # Reusable UI components
-├── pages/            # Route-level views
-├── services/         # API call functions
-└── main.jsx          # App entry point
+├── app/
+│   ├── api/
+│   │   ├── assets/route.js          # Proxy → /assetslist
+│   │   ├── summary/route.js         # Proxy → /assets/summary
+│   │   └── asset-history/route.js   # Proxy → /assets/{id}/soc
+│   └── page.js                      # Root route
+├── components/                      # Reusable UI components
+├── hooks/
+│   ├── useAssets.js                 # Fleet list + 5-min polling
+│   ├── useFleetSummary.js           # Summary totals + 5-min polling
+│   ├── useAssetHistory.js           # Historical SoC (mode=D)
+│   └── useAssetDetail.js            # Latest SoC record (mode=S)
+├── lib/
+│   ├── assetUtils.js                # getBubbleColor(), asset helpers
+│   └── dateUtils.js                 # Timezone-aware date formatting
+└── styles/
+    └── tokens.css                   # CSS custom properties (HSL design tokens)
 ```
 
 ---
 
-* Grid Asset Manager Frontend · Next.js · React · JavaScript · Mobile-first*
+## Deployment
+
+The application is deployed on **Vercel**. Set the following environment variables in the Vercel dashboard before deploying:
+
+| Variable | Description |
+|---|---|
+| `API_BASE_URL` | Full URL of the backend VPS |
+| `API_KEY` | Backend API key (injected server-side only) |
+
+No CORS configuration is required on the backend — all browser requests stay on the same Vercel origin. Only server-to-server calls reach the VPS.
+
+---
+
+## Development Notes
+
+- **HMR from a physical device** — `allowedDevOrigins` in `next.config.mjs` is conditionally applied in `development` only. Update the IP if your local network changes.
+- **Timezone strategy** — all timestamps are sent to and received from the API in UTC. Conversion to `Europe/Paris` happens only at display time.
+- **Polling** — `useAssets` and `useFleetSummary` refresh every 5 minutes silently (no loading flash between polls).
+- **10-minute bucketing** — `useAssetHistory` aligns records to 10-minute slots. Assets with lower reporting frequency may show gaps on long time ranges.
+
+---
+
+*Grid Asset Manager Frontend · Next.js · D3.js · Recharts · CSS Modules · Vercel · 2026*
