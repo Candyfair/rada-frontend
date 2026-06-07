@@ -20,7 +20,13 @@ export function useFleetSummary() {
     }
 
     fetchSummary();
-  }, []); // empty dep array = fetch once on mount
+
+    // Refresh every 5 minutes
+    const interval = setInterval(fetchSummary, 5 * 60 * 1000);
+
+    // Clear the interval when the component unmounts
+    return () => clearInterval(interval);
+  }, []);
 
   return { summary, loading, error };
 }
