@@ -1,6 +1,6 @@
 "use client";
 
-import { Moon, Sun, Settings, ChartColumnBig } from "lucide-react";
+import { Moon, Sun, Settings, ChartColumnBig, ShipWheelIcon } from "lucide-react";
 import LogoutMenu from "@/components/UI/LogoutMenu";
 
 // HomeHeader — fixed top-right controls bar.
@@ -64,7 +64,7 @@ export default function HomeHeader({
           onClick={onSettingsPress}
           aria-label="Open settings"
         >
-          <Settings size={22} color="var(--color-icon)" />
+          <ShipWheelIcon size={22} color="var(--color-icon)" />
         </button>
 
         {isLogoutMenuOpen && (
@@ -109,8 +109,7 @@ const styles = {
 
   settingsButton: {
     background: "none",
-    border: "1px solid var(--color-settings-border)",
-    borderRadius: 8,
+    border: 0,
     cursor: "pointer",
     padding: 6,
     display: "flex",
