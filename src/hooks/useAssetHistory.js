@@ -1,5 +1,4 @@
 import { useState, useCallback } from "react";
-import { API_BASE_URL } from "@/lib/constants";
 
 const DEFAULT_LIMIT = 30;
 
@@ -19,16 +18,21 @@ export function useAssetHistory() {
     }));
 
     try {
-      let url = `${API_BASE_URL}/assets/${assetId}/soc?mode=D`;
+      // Build proxy URL with query params forwarded to the API Route
+      const params = new URLSearchParams({
+        asset_id: assetId,
+        mode: "D",
+      });
 
       if (fromTimestamp && toTimestamp) {
-        url += `&from_ts=${encodeURIComponent(fromTimestamp)}`;
-        url += `&to_ts=${encodeURIComponent(toTimestamp)}`;
+        params.set("from_ts", fromTimestamp);
+        params.set("to_ts", toTimestamp);
       } else {
-        url += `&limit=${DEFAULT_LIMIT}`;
+        params.set("limit", DEFAULT_LIMIT);
       }
 
-      const response = await fetch(url);
+      const response = await fetch(`/api/asset-history?${params.toString()}`);
+
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
 

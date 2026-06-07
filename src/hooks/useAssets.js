@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { API_BASE_URL } from "@/lib/constants";
 
 // Export function useAssets
 export function useAssets() {
@@ -10,7 +9,7 @@ export function useAssets() {
   useEffect(() => {
     async function fetchAssets() {
       try {
-        const response = await fetch(`${API_BASE_URL}/assetslist`)
+        const response = await fetch("/api/assets");
         if (!response.ok) {
           throw new Error(`Erreur HTTP : ${response.status}`)
         }

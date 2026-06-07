@@ -93,7 +93,7 @@ export default function DetailPanel({
                     />
                   <DetailRow
                     label="Current power"
-                    value={`${displayedAsset.energy_mwh?.toFixed(2)} MWh`}
+                    value={`${displayedAsset.energy_mwh?.toFixed(2)} MW`}
                     valueColor={getValueColor(displayedAsset.energy_mwh)}
                     />
                 </>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAssets } from "@/hooks/useAssets";
 import { useAssetDetail } from "@/hooks/useAssetDetail";
 import { useTheme } from "@/context/ThemeContext";
+import { useFleetSummary } from "@/hooks/useFleetSummary";
 import BubbleChart from "@/components/BubbleChart/BubbleChart";
 import Toggle from "@/components/UI/Toggle";
 import FilterModal from "@/components/UI/FilterModal";
@@ -17,6 +18,8 @@ import StatsModal from "@/components/Graphs/StatsModal";
 export default function Home() {
   const { assets, loading, error } = useAssets();
   const { theme, toggleTheme } = useTheme();
+  const { summary } = useFleetSummary();
+
   const router = useRouter();
 
   const [metric, setMetric] = useState("power_mw");
@@ -28,9 +31,7 @@ export default function Home() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isDetailLogoutOpen, setIsDetailLogoutOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
-
-  // Hardcoded until the grid signal API is connected
-  const TOTAL_POWER = 5000;
+  
 
   // ------------------------------------------------------------------
   // DERIVED STATE
@@ -42,6 +43,22 @@ export default function Home() {
 
   const showToggle = activeFilters.size === 1 && activeFilters.has("battery");
   const effectiveMetric = showToggle ? metric : "power_mw";
+
+  const displayedPower = useMemo(() => {
+    if (!summary) return null;
+
+    // All assets visible — use the precomputed total
+    if (activeFilters.has("all")) {
+      return Math.round(summary.total_power_mw);
+    }
+
+    // Sum power_mw for each active filter type
+    let total = 0;
+    for (const type of activeFilters) {
+      total += summary.by_asset_type[type]?.power_mw ?? 0;
+    }
+    return Math.round(total);
+  }, [summary, activeFilters]);
 
   // Fetch detail data only when the detail page is open
   const {
@@ -158,7 +175,7 @@ export default function Home() {
 
         {/* ---- TOTAL POWER BADGE ---- */}
         <TotalPowerBadge
-          value={TOTAL_POWER}
+          value={displayedPower}
           isExpanded={isFilterOpen}
           isDetailOpen={isDetailOpen}
         />

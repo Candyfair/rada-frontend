@@ -66,9 +66,9 @@
 }
 
 .metricChip.active {
-  background-color: var(--color-input-bg);
+  background-color: var(--color-icon);
   color: var(--color-detail-btn-text);
-  border-color: var(--color-input-bg);
+  border-color: var(--color-icon);
 }
 
 /* ---- Battery selector ---- */
