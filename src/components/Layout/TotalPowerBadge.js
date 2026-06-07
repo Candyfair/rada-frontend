@@ -9,11 +9,11 @@
 // position, opacity and width simultaneously.
 // Phases overlap naturally because each element animates independently.
 
-export default function TotalPowerBadge({ value, isExpanded, isDetailOpen }) {
+  export default function TotalPowerBadge({ value, unit = "MW", label = "Total power", isExpanded, isDetailOpen }) {
   // Formats the power value — shows a dash while data is loading
   function formatPower(value) {
-    if (value === null || value === undefined) return "— MW";
-    return `${value} MW`;
+    if (value === null || value === undefined) return `— ${unit}`;
+    return `${value} ${unit}`;
   }
 
   return (
@@ -52,7 +52,7 @@ export default function TotalPowerBadge({ value, isExpanded, isDetailOpen }) {
         ].join(", "),
       }}>
         <span style={styles.textLarge}>
-          {isExpanded ? `Total power: ${formatPower(value)}` : formatPower(value)}
+          {isExpanded ? `${label}: ${formatPower(value)}` : formatPower(value)}
         </span>
       </div>
     </>

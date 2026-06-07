@@ -60,6 +60,13 @@ export default function Home() {
     return Math.round(total);
   }, [summary, activeFilters]);
 
+  const displayedEnergy = useMemo(() => {
+    if (!summary) return null;
+
+    // Energy only makes sense for batteries — always use battery total
+    return Math.round(summary.by_asset_type["battery"]?.energy_mwh ?? 0);
+  }, [summary]);
+
   // Fetch detail data only when the detail page is open
   const {
     data: detailData,
@@ -175,7 +182,9 @@ export default function Home() {
 
         {/* ---- TOTAL POWER BADGE ---- */}
         <TotalPowerBadge
-          value={displayedPower}
+          value={showToggle && metric === "energy_mwh" ? displayedEnergy : displayedPower}
+          unit={showToggle && metric === "energy_mwh" ? "MWh" : "MW"}
+          label={showToggle && metric === "energy_mwh" ? "Total capacity" : "Total power"}
           isExpanded={isFilterOpen}
           isDetailOpen={isDetailOpen}
         />
