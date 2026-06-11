@@ -1,7 +1,7 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
-import * as d3 from 'd3';
-import { getBubbleColor, getMetricValue } from '@/lib/bubbleUtils';
-import BubbleNode from './BubbleNode';
+import { useEffect, useRef, useCallback, useState } from "react";
+import * as d3 from "d3";
+import { getBubbleColor, getMetricValue } from "@/lib/bubbleUtils";
+import BubbleNode from "./BubbleNode";
 
 const CONFIG = {
   MIN_RADIUS: 24,
@@ -90,28 +90,28 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
     const simulation = d3
       .forceSimulation([])
       .force(
-        'center',
+        "center",
         d3
           .forceCenter(width / 2, height / 2)
           .strength(CONFIG.CENTER_FORCE_STRENGTH),
       )
       .force(
-        'collide',
+        "collide",
         d3.forceCollide((d) => d.r + CONFIG.COLLISION_PADDING).strength(0.8),
       )
-      .force('x', d3.forceX(width / 2).strength(0.02))
-      .force('y', d3.forceY(height / 2).strength(0.02))
-      .force('float', floatForce)
+      .force("x", d3.forceX(width / 2).strength(0.02))
+      .force("y", d3.forceY(height / 2).strength(0.02))
+      .force("float", floatForce)
       .velocityDecay(CONFIG.VELOCITY_DECAY)
       .alphaDecay(0)
       .alphaTarget(0.3)
-      .on('tick', () => {
+      .on("tick", () => {
         if (!gRef.current) return;
-        const groups = gRef.current.querySelectorAll('g.bubble-node');
+        const groups = gRef.current.querySelectorAll("g.bubble-node");
         nodesRef.current.forEach((node, i) => {
           if (groups[i]) {
             groups[i].setAttribute(
-              'transform',
+              "transform",
               `translate(${node.x}, ${node.y})`,
             );
           }
@@ -124,8 +124,8 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
     const zoom = d3
       .zoom()
       .scaleExtent([CONFIG.ZOOM_MIN, CONFIG.ZOOM_MAX])
-      .on('zoom', (event) => {
-        d3.select(gRef.current).attr('transform', event.transform);
+      .on("zoom", (event) => {
+        d3.select(gRef.current).attr("transform", event.transform);
         currentZoomRef.current = event.transform;
         updateLabelPositions();
         setCurrentScale(event.transform.k);
@@ -145,15 +145,16 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
 
     return () => {
       simulation.stop();
-      svg.on('.zoom', null);
+      svg.on(".zoom", null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // -------------------------------------------------------------------
-  // DATA UPDATE — runs on every assets refresh (polling)
-  // Merges new data into existing nodes to preserve x/y positions.
-  // On first run (nodesRef is empty), creates nodes with random positions.
+  // DATA UPDATE — runs on every assets refresh (polling) and filter change
+  // - First load: creates nodes with random positions
+  // - Filter change: rebuilds nodes but reuses known x/y positions
+  // - Silent poll: merges new values without touching positions
   // -------------------------------------------------------------------
   useEffect(() => {
     if (!assets.length || !simulationRef.current) return;
@@ -163,40 +164,33 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
     const height = svgRef.current.clientHeight;
     const radiusScale = buildRadiusScale(assets, metric);
 
-    if (nodesRef.current.length === 0) {
-      // First load: create nodes with initial random positions
-      const initialNodes = assets.map((b) => ({
-        ...b,
-        r: radiusScale(getMetricValue(b, metric)),
-        x: width / 2 + (Math.random() - 0.5) * 100,
-        y: height / 2 + (Math.random() - 0.5) * 100,
-        floatAngle: Math.random() * Math.PI * 2,
-        floatSpeed:
-          CONFIG.FLOAT_SPEED_MIN +
-          Math.random() * (CONFIG.FLOAT_SPEED_MAX - CONFIG.FLOAT_SPEED_MIN),
-      }));
+    // Build a map of existing positions keyed by asset id
+    // so we can reuse them if the same asset reappears after a filter change
+    const existingPositions = {};
+    nodesRef.current.forEach((node) => {
+      existingPositions[node.id] = {
+        x: node.x,
+        y: node.y,
+        vx: node.vx,
+        vy: node.vy,
+      };
+    });
 
-      nodesRef.current = initialNodes;
-      simulationRef.current.nodes(initialNodes).alpha(0.5).restart();
-      setNodes([...initialNodes]);
-    } else {
-      // Subsequent polls: update data properties only, preserve x/y
+    // Check whether the current nodes match the incoming assets exactly
+    const currentIds = new Set(nodesRef.current.map((n) => n.id));
+    const incomingIds = new Set(assets.map((a) => a.id));
+    const sameSet =
+      currentIds.size === incomingIds.size &&
+      [...incomingIds].every((id) => currentIds.has(id));
+
+    if (sameSet && nodesRef.current.length > 0) {
+      // --- Silent poll: same assets, just update values ---
       nodesRef.current.forEach((node) => {
         const fresh = assets.find((a) => a.id === node.id);
         if (!fresh) return;
 
-        // Update all data fields that can change between polls
-        node.energy_mwh = fresh.energy_mwh;
-        node.power_mw = fresh.power_mw;
-        node.operational_mode = fresh.operational_mode;
-        node.asset_status = fresh.asset_status;
-
-        // Update radius based on new values — this triggers the collide adjustment
-        node.r = radiusScale(getMetricValue(node, metric));
-
-        // Spread any other fields from fresh data except position/physics
-        const { x, y, vx, vy, floatAngle, floatSpeed, ...rest } = node;
-        Object.assign(node, rest, fresh);
+        const { x, y, vx, vy, floatAngle, floatSpeed } = node;
+        Object.assign(node, fresh);
         node.x = x;
         node.y = y;
         node.vx = vx;
@@ -206,18 +200,39 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
         node.r = radiusScale(getMetricValue(node, metric));
       });
 
-      // Update collision force with new radii, nudge alpha to re-settle bubbles
       simulationRef.current
         .force(
-          'collide',
+          "collide",
           d3.forceCollide((d) => d.r + CONFIG.COLLISION_PADDING).strength(0.8),
         )
         .alpha(0.3)
         .restart();
 
-      // Trigger a React re-render so label values update
       setNodes([...nodesRef.current]);
+    } else {
+      // --- First load or filter change: rebuild nodes ---
+      // Reuse known positions when available, otherwise place near centre
+      const newNodes = assets.map((b) => {
+        const known = existingPositions[b.id];
+        return {
+          ...b,
+          r: radiusScale(getMetricValue(b, metric)),
+          x: known ? known.x : width / 2 + (Math.random() - 0.5) * 100,
+          y: known ? known.y : height / 2 + (Math.random() - 0.5) * 100,
+          vx: known ? known.vx : 0,
+          vy: known ? known.vy : 0,
+          floatAngle: Math.random() * Math.PI * 2,
+          floatSpeed:
+            CONFIG.FLOAT_SPEED_MIN +
+            Math.random() * (CONFIG.FLOAT_SPEED_MAX - CONFIG.FLOAT_SPEED_MIN),
+        };
+      });
+
+      nodesRef.current = newNodes;
+      simulationRef.current.nodes(newNodes).alpha(0.5).restart();
+      setNodes([...newNodes]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assets, buildRadiusScale]);
 
   // -------------------------------------------------------------------
@@ -233,7 +248,7 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
 
     simulationRef.current
       .force(
-        'collide',
+        "collide",
         d3.forceCollide((d) => d.r + CONFIG.COLLISION_PADDING).strength(0.8),
       )
       .alpha(0.5)
@@ -248,23 +263,23 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
   //      pointerEvents: none so taps pass through to the SVG circles below
   // -------------------------------------------------------------------
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div style={{ position: "relative", width: "100%", height: "100%" }}>
       {/* ---- LAYER 1 : SVG circles ---- */}
       <svg
         ref={svgRef}
-        style={{ width: '100%', height: '100%', display: 'block' }}
-        aria-label='Asset fleet map'
+        style={{ width: "100%", height: "100%", display: "block" }}
+        aria-label="Asset fleet map"
       >
         <g ref={gRef}>
           {nodes.map((node) => (
             <g
               key={node.id}
-              className='bubble-node'
+              className="bubble-node"
               onClick={(e) => {
                 e.stopPropagation();
                 onSelect(node);
               }}
-              style={{ cursor: 'pointer', willChange: 'transform' }}
+              style={{ cursor: "pointer", willChange: "transform" }}
             >
               <BubbleNode
                 radius={node.r}
@@ -282,20 +297,20 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
       <div
         ref={labelsRef}
         style={{
-          position: 'absolute',
+          position: "absolute",
           inset: 0,
-          pointerEvents: 'none',
-          overflow: 'hidden',
+          pointerEvents: "none",
+          overflow: "hidden",
         }}
       >
         {nodes.map((node) => {
           const rawPower = node.power_mw ?? 0;
-          const isNegative = metric === 'power_mw' && rawPower < 0;
+          const isNegative = metric === "power_mw" && rawPower < 0;
 
           const metricLabel =
-            metric === 'energy_mwh'
-              ? `${Math.round(node.energy_mwh)} MWh`
-              : `${rawPower >= 0 ? '' : '-'}${Math.abs(rawPower).toFixed(2)} MW`;
+            metric === "energy_mwh"
+              ? `${Math.round(node.energy_mwh).toFixed(1)} MWh`
+              : `${rawPower >= 0 ? "" : "-"}${Math.abs(rawPower).toFixed(2)} MW`;
 
           const fontSize = Math.max(
             8,
@@ -307,35 +322,35 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
             <div
               key={node.id}
               style={{
-                position: 'absolute',
+                position: "absolute",
                 top: 0,
                 left: 0,
                 // Width matches the bubble diameter so text wraps correctly
                 width: node.r * currentScale * 1.8,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
                 gap: 2,
                 // Initial position — D3 will update this every tick via
                 // updateLabelPositions() without going through React state
-                transform: 'translate(-50%, -50%)',
-                willChange: 'transform',
+                transform: "translate(-50%, -50%)",
+                willChange: "transform",
               }}
             >
               <span
                 style={{
                   fontSize,
                   fontWeight: 600,
-                  fontFamily: 'var(--font-serif)',
-                  letterSpacing: 'normal',
-                  color: '#ffffff',
+                  fontFamily: "var(--font-serif)",
+                  letterSpacing: "normal",
+                  color: "#ffffff",
                   lineHeight: 1.1,
-                  textAlign: 'center',
-                  maxWidth: '100%',
-                  overflow: 'hidden',
-                  whiteSpace: 'nowrap',
-                  textOverflow: 'ellipsis',
+                  textAlign: "center",
+                  maxWidth: "100%",
+                  overflow: "hidden",
+                  whiteSpace: "nowrap",
+                  textOverflow: "ellipsis",
                 }}
               >
                 {node.name}
@@ -344,15 +359,15 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
               <span
                 style={{
                   fontSize: fontSize * 0.88,
-                  fontFamily: 'var(--font-serif)',
-                  letterSpacing: 'normal',
+                  fontFamily: "var(--font-serif)",
+                  letterSpacing: "normal",
                   color: isNegative
-                    ? '#FF6B6B'
+                    ? "#FF6B6B"
                     : isSelected
-                      ? '#e0f7fa'
-                      : 'rgba(255,255,255,0.7)',
+                      ? "#e0f7fa"
+                      : "rgba(255,255,255,0.7)",
                   lineHeight: 1.1,
-                  textAlign: 'center',
+                  textAlign: "center",
                 }}
               >
                 {metricLabel}

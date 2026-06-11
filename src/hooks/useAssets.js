@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 // Export function useAssets
 export function useAssets() {
@@ -9,7 +9,7 @@ export function useAssets() {
   useEffect(() => {
     async function fetchAssets() {
       try {
-        const response = await fetch('/api/assets');
+        const response = await fetch("/api/assets");
         if (!response.ok) {
           throw new Error(`HTTP error: ${response.status}`);
         }
@@ -25,8 +25,7 @@ export function useAssets() {
     fetchAssets();
 
     // Refresh every 5 minutes
-    // const interval = setInterval(fetchAssets, 5 * 60 * 1000);
-    const interval = setInterval(fetchAssets, 1 * 60 * 1000);
+    const interval = setInterval(fetchAssets, 5 * 60 * 1000);
 
     // Clear the interval when the component unmounts
     return () => clearInterval(interval);
