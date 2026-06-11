@@ -19,7 +19,7 @@ const CONFIG = {
 export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
   const svgRef = useRef(null);
   const gRef = useRef(null);
-  const labelsRef = useRef(null);  // ref to the HTML label overlay container
+  const labelsRef = useRef(null); // ref to the HTML label overlay container
   const simulationRef = useRef(null);
   const zoomRef = useRef(null);
   const nodesRef = useRef([]);
@@ -32,14 +32,14 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
   const currentZoomRef = useRef(d3.zoomIdentity);
 
   const buildRadiusScale = useCallback((data, metricKey) => {
-  // getMetricValue returns Math.abs() for power_mw,
-  // so negative values don't collapse the radius scale
-  const values = data.map((b) => getMetricValue(b, metricKey));
-  return d3
-    .scaleLinear()
-    .domain([d3.min(values), d3.max(values)])
-    .range([CONFIG.MIN_RADIUS, CONFIG.MAX_RADIUS]);
-}, []);
+    // getMetricValue returns Math.abs() for power_mw,
+    // so negative values don't collapse the radius scale
+    const values = data.map((b) => getMetricValue(b, metricKey));
+    return d3
+      .scaleLinear()
+      .domain([d3.min(values), d3.max(values)])
+      .range([CONFIG.MIN_RADIUS, CONFIG.MAX_RADIUS]);
+  }, []);
 
   // -------------------------------------------------------------------
   // LABEL POSITION UPDATE
@@ -65,29 +65,19 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
   }, []);
 
   // -------------------------------------------------------------------
-  // SIMULATION INITIALISATION
+  // SIMULATION INIT — runs once on mount only
+  // assets are NOT in the dependency array intentionally:
+  // we never want to restart the simulation when data refreshes.
   // -------------------------------------------------------------------
   useEffect(() => {
-    if (!assets.length || !svgRef.current) return;
+    if (!svgRef.current) return;
 
     const svg = d3.select(svgRef.current);
     const width = svgRef.current.clientWidth;
     const height = svgRef.current.clientHeight;
-    const radiusScale = buildRadiusScale(assets, metric);
 
-    const initialNodes = assets.map((b) => ({
-      ...b,
-      r: radiusScale(getMetricValue(b, metric)),
-      x: width / 2 + (Math.random() - 0.5) * 100,
-      y: height / 2 + (Math.random() - 0.5) * 100,
-      floatAngle: Math.random() * Math.PI * 2,
-      floatSpeed:
-        CONFIG.FLOAT_SPEED_MIN +
-        Math.random() * (CONFIG.FLOAT_SPEED_MAX - CONFIG.FLOAT_SPEED_MIN),
-    }));
-
-    nodesRef.current = initialNodes;
-    setNodes([...initialNodes]);
+    // Initialise with empty nodes — the data update effect will populate them
+    nodesRef.current = [];
 
     function floatForce() {
       nodesRef.current.forEach((node) => {
@@ -98,9 +88,17 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
     }
 
     const simulation = d3
-      .forceSimulation(nodesRef.current)
-      .force("center", d3.forceCenter(width / 2, height / 2).strength(CONFIG.CENTER_FORCE_STRENGTH))
-      .force("collide", d3.forceCollide((d) => d.r + CONFIG.COLLISION_PADDING).strength(0.8))
+      .forceSimulation([])
+      .force(
+        "center",
+        d3
+          .forceCenter(width / 2, height / 2)
+          .strength(CONFIG.CENTER_FORCE_STRENGTH),
+      )
+      .force(
+        "collide",
+        d3.forceCollide((d) => d.r + CONFIG.COLLISION_PADDING).strength(0.8),
+      )
       .force("x", d3.forceX(width / 2).strength(0.02))
       .force("y", d3.forceY(height / 2).strength(0.02))
       .force("float", floatForce)
@@ -108,18 +106,16 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
       .alphaDecay(0)
       .alphaTarget(0.3)
       .on("tick", () => {
-        // Update SVG circle positions
         if (!gRef.current) return;
         const groups = gRef.current.querySelectorAll("g.bubble-node");
         nodesRef.current.forEach((node, i) => {
           if (groups[i]) {
             groups[i].setAttribute(
               "transform",
-              `translate(${node.x}, ${node.y})`
+              `translate(${node.x}, ${node.y})`,
             );
           }
         });
-        // Update HTML label positions in the same tick
         updateLabelPositions();
       });
 
@@ -129,9 +125,7 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
       .zoom()
       .scaleExtent([CONFIG.ZOOM_MIN, CONFIG.ZOOM_MAX])
       .on("zoom", (event) => {
-        // Update the SVG group transform as before
         d3.select(gRef.current).attr("transform", event.transform);
-        // Store the current zoom transform and reposition labels
         currentZoomRef.current = event.transform;
         updateLabelPositions();
         setCurrentScale(event.transform.k);
@@ -144,7 +138,7 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
       d3.zoomIdentity
         .translate(width / 2, height / 2)
         .scale(initialScale)
-        .translate(-width / 2, -height / 2)
+        .translate(-width / 2, -height / 2),
     );
 
     zoomRef.current = zoom;
@@ -153,8 +147,93 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
       simulation.stop();
       svg.on(".zoom", null);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [metric, assets, buildRadiusScale]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // -------------------------------------------------------------------
+  // DATA UPDATE — runs on every assets refresh (polling) and filter change
+  // - First load: creates nodes with random positions
+  // - Filter change: rebuilds nodes but reuses known x/y positions
+  // - Silent poll: merges new values without touching positions
+  // -------------------------------------------------------------------
+  useEffect(() => {
+    if (!assets.length || !simulationRef.current) return;
+
+    const svg = d3.select(svgRef.current);
+    const width = svgRef.current.clientWidth;
+    const height = svgRef.current.clientHeight;
+    const radiusScale = buildRadiusScale(assets, metric);
+
+    // Build a map of existing positions keyed by asset id
+    // so we can reuse them if the same asset reappears after a filter change
+    const existingPositions = {};
+    nodesRef.current.forEach((node) => {
+      existingPositions[node.id] = {
+        x: node.x,
+        y: node.y,
+        vx: node.vx,
+        vy: node.vy,
+      };
+    });
+
+    // Check whether the current nodes match the incoming assets exactly
+    const currentIds = new Set(nodesRef.current.map((n) => n.id));
+    const incomingIds = new Set(assets.map((a) => a.id));
+    const sameSet =
+      currentIds.size === incomingIds.size &&
+      [...incomingIds].every((id) => currentIds.has(id));
+
+    if (sameSet && nodesRef.current.length > 0) {
+      // --- Silent poll: same assets, just update values ---
+      nodesRef.current.forEach((node) => {
+        const fresh = assets.find((a) => a.id === node.id);
+        if (!fresh) return;
+
+        const { x, y, vx, vy, floatAngle, floatSpeed } = node;
+        Object.assign(node, fresh);
+        node.x = x;
+        node.y = y;
+        node.vx = vx;
+        node.vy = vy;
+        node.floatAngle = floatAngle;
+        node.floatSpeed = floatSpeed;
+        node.r = radiusScale(getMetricValue(node, metric));
+      });
+
+      simulationRef.current
+        .force(
+          "collide",
+          d3.forceCollide((d) => d.r + CONFIG.COLLISION_PADDING).strength(0.8),
+        )
+        .alpha(0.3)
+        .restart();
+
+      setNodes([...nodesRef.current]);
+    } else {
+      // --- First load or filter change: rebuild nodes ---
+      // Reuse known positions when available, otherwise place near centre
+      const newNodes = assets.map((b) => {
+        const known = existingPositions[b.id];
+        return {
+          ...b,
+          r: radiusScale(getMetricValue(b, metric)),
+          x: known ? known.x : width / 2 + (Math.random() - 0.5) * 100,
+          y: known ? known.y : height / 2 + (Math.random() - 0.5) * 100,
+          vx: known ? known.vx : 0,
+          vy: known ? known.vy : 0,
+          floatAngle: Math.random() * Math.PI * 2,
+          floatSpeed:
+            CONFIG.FLOAT_SPEED_MIN +
+            Math.random() * (CONFIG.FLOAT_SPEED_MAX - CONFIG.FLOAT_SPEED_MIN),
+        };
+      });
+
+      nodesRef.current = newNodes;
+      simulationRef.current.nodes(newNodes).alpha(0.5).restart();
+      setNodes([...newNodes]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assets, buildRadiusScale]);
 
   // -------------------------------------------------------------------
   // METRIC UPDATE
@@ -168,11 +247,13 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
     });
 
     simulationRef.current
-      .force("collide", d3.forceCollide((d) => d.r + CONFIG.COLLISION_PADDING).strength(0.8))
+      .force(
+        "collide",
+        d3.forceCollide((d) => d.r + CONFIG.COLLISION_PADDING).strength(0.8),
+      )
       .alpha(0.5)
       .restart();
   }, [metric, assets, buildRadiusScale]);
-
 
   // -------------------------------------------------------------------
   // RENDER
@@ -183,7 +264,6 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
   // -------------------------------------------------------------------
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
-
       {/* ---- LAYER 1 : SVG circles ---- */}
       <svg
         ref={svgRef}
@@ -229,10 +309,13 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
 
           const metricLabel =
             metric === "energy_mwh"
-              ? `${Math.round(node.energy_mwh)} MWh`
+              ? `${Math.round(node.energy_mwh).toFixed(1)} MWh`
               : `${rawPower >= 0 ? "" : "-"}${Math.abs(rawPower).toFixed(2)} MW`;
 
-          const fontSize = Math.max(8, Math.min(node.r * currentScale * 0.24, 13 * currentScale));
+          const fontSize = Math.max(
+            8,
+            Math.min(node.r * currentScale * 0.24, 13 * currentScale),
+          );
           const isSelected = node.id === selectedId;
 
           return (
@@ -255,45 +338,44 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
                 willChange: "transform",
               }}
             >
-            <span
-              style={{
-                fontSize,
-                fontWeight: 600,
-                fontFamily: "var(--font-serif)",
-                letterSpacing: "normal",
-                color: "#ffffff",
-                lineHeight: 1.1,
-                textAlign: "center",
-                maxWidth: "100%",
-                overflow: "hidden",
-                whiteSpace: "nowrap",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {node.name}
-            </span>
+              <span
+                style={{
+                  fontSize,
+                  fontWeight: 600,
+                  fontFamily: "var(--font-serif)",
+                  letterSpacing: "normal",
+                  color: "#ffffff",
+                  lineHeight: 1.1,
+                  textAlign: "center",
+                  maxWidth: "100%",
+                  overflow: "hidden",
+                  whiteSpace: "nowrap",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {node.name}
+              </span>
 
-            <span
-              style={{
-                fontSize: fontSize * 0.88,
-                fontFamily: "var(--font-serif)",
-                letterSpacing: "normal",
-                color: isNegative
-                  ? "#FF6B6B"
-                  : isSelected
-                  ? "#e0f7fa"
-                  : "rgba(255,255,255,0.7)",
-                lineHeight: 1.1,
-                textAlign: "center",
-              }}
-            >
-              {metricLabel}
-            </span>
+              <span
+                style={{
+                  fontSize: fontSize * 0.88,
+                  fontFamily: "var(--font-serif)",
+                  letterSpacing: "normal",
+                  color: isNegative
+                    ? "#FF6B6B"
+                    : isSelected
+                      ? "#e0f7fa"
+                      : "rgba(255,255,255,0.7)",
+                  lineHeight: 1.1,
+                  textAlign: "center",
+                }}
+              >
+                {metricLabel}
+              </span>
             </div>
           );
         })}
       </div>
-
     </div>
   );
 }

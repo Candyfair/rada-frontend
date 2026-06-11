@@ -22,7 +22,6 @@ export default function DetailPanel({
   onOpenDetail,
   onOpenStats,
 }) {
-
   // Keep the last selected asset in memory so the panel content
   // stays visible during the closing animation.
   const [lastAsset, setLastAsset] = useState(selectedAsset);
@@ -66,11 +65,11 @@ export default function DetailPanel({
       {displayedAsset && (
         <>
           <button
-              style={styles.closeButton}
-              onClick={onDismiss}
-              aria-label="Close panel"
+            style={styles.closeButton}
+            onClick={onDismiss}
+            aria-label="Close panel"
           >
-              <X />
+            <X />
           </button>
 
           <div style={styles.panelHeader}>
@@ -79,23 +78,20 @@ export default function DetailPanel({
 
           <div style={styles.panelBody}>
             <div style={styles.panelRowsBlock}>
-              <DetailRow
-                label="Type"
-                value={displayedAsset.asset_type}
-              />
+              <DetailRow label="Type" value={displayedAsset.asset_type} />
 
               {/* Batteries only */}
-              { displayedAsset.asset_type === "battery" && (
+              {displayedAsset.asset_type === "battery" && (
                 <>
-                  <DetailRow  
+                  <DetailRow
                     label="Maximum capacity"
                     value={`${displayedAsset.max_capacity_mwh} MWh`}
-                    />
+                  />
                   <DetailRow
-                    label="Current power"
-                    value={`${displayedAsset.energy_mwh?.toFixed(2)} MW`}
+                    label="Current energy"
+                    value={`${displayedAsset.energy_mwh?.toFixed(2)} MWh`}
                     valueColor={getValueColor(displayedAsset.energy_mwh)}
-                    />
+                  />
                 </>
               )}
 
@@ -105,7 +101,7 @@ export default function DetailPanel({
                 value={`${displayedAsset.max_charge_rate_mw} MW`}
               />
               <DetailRow
-                label={`Current ${displayedAsset.power_mw <- 0 ? "discharge" : "charge"}`}
+                label={`Current ${displayedAsset.power_mw < -0 ? "discharge" : "charge"}`}
                 value={`${displayedAsset.power_mw?.toFixed(2)} MW`}
                 valueColor={getValueColor(displayedAsset.power_mw)}
               />
@@ -159,10 +155,14 @@ function DetailRow({ label, value, valueColor }) {
   return (
     <div style={styles.detailRow}>
       <span style={styles.detailLabel}>{label}</span>
-      <span style={{
-        ...styles.detailValue,
-        color: valueColor ?? "var(--color-panel-value)",
-      }}>{value}</span>
+      <span
+        style={{
+          ...styles.detailValue,
+          color: valueColor ?? "var(--color-panel-value)",
+        }}
+      >
+        {value}
+      </span>
     </div>
   );
 }
@@ -175,7 +175,7 @@ const styles = {
     position: "absolute",
     bottom: 60,
     left: "50%",
-    transform: "translateX(-50%)",  // centering — will be overridden inline
+    transform: "translateX(-50%)", // centering — will be overridden inline
     width: "calc(100% - 40px)",
     maxWidth: 600,
     height: "auto",
@@ -204,7 +204,7 @@ const styles = {
     fontSize: 18,
     fontWeight: "700",
     color: "var(--color-panel-title)",
-    marginBottom: 12
+    marginBottom: 12,
   },
 
   closeButton: {
@@ -214,7 +214,7 @@ const styles = {
     fontSize: 24,
     cursor: "pointer",
     lineHeight: 1,
-    textAlign: "right"
+    textAlign: "right",
   },
 
   panelBody: {
@@ -237,12 +237,12 @@ const styles = {
     display: "flex",
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "flex-end",  
-    gap: 8,                   
+    justifyContent: "flex-end",
+    gap: 8,
     position: "absolute",
     bottom: -50,
     right: 0,
-    },
+  },
 
   detailButton: {
     display: "flex",
@@ -293,6 +293,4 @@ const styles = {
     fontWeight: "600",
     color: "var(--color-panel-value)",
   },
-
-
 };

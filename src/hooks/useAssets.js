@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 
 // Export function useAssets
 export function useAssets() {
-  const [assets, setAssets] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  
+  const [assets, setAssets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   useEffect(() => {
     async function fetchAssets() {
       try {
@@ -31,5 +31,5 @@ export function useAssets() {
     return () => clearInterval(interval);
   }, []);
 
-  return {assets, loading, error}    
+  return { assets, loading, error };
 }

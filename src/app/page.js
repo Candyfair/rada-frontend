@@ -31,7 +31,6 @@ export default function Home() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isDetailLogoutOpen, setIsDetailLogoutOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
-  
 
   // ------------------------------------------------------------------
   // DERIVED STATE
@@ -162,7 +161,6 @@ export default function Home() {
       `}</style>
 
       <main style={styles.root}>
-
         {/* ---- BUBBLE MAP ---- */}
         <div style={styles.mapWrapper} onClick={handleDismiss}>
           <BubbleChart
@@ -182,9 +180,17 @@ export default function Home() {
 
         {/* ---- TOTAL POWER BADGE ---- */}
         <TotalPowerBadge
-          value={showToggle && metric === "energy_mwh" ? displayedEnergy : displayedPower}
+          value={
+            showToggle && metric === "energy_mwh"
+              ? displayedEnergy
+              : displayedPower
+          }
           unit={showToggle && metric === "energy_mwh" ? "MWh" : "MW"}
-          label={showToggle && metric === "energy_mwh" ? "Total capacity" : "Total power"}
+          label={
+            showToggle && metric === "energy_mwh"
+              ? "Total capacity"
+              : "Total power"
+          }
           isExpanded={isFilterOpen}
           isDetailOpen={isDetailOpen}
         />
@@ -211,8 +217,8 @@ export default function Home() {
           onOpenStats={() => {
             if (selectedAsset) {
               setIsStatsOpen(true);
-            }}
-          }       
+            }
+          }}
         />
 
         {/* ---- FILTER MODAL ---- */}
@@ -228,23 +234,28 @@ export default function Home() {
         )}
 
         {/* ---- BLUR OVERLAY — active when detail page is open ---- */}
-        <div style={{
-          ...styles.blurOverlay,
-          opacity: isDetailOpen ? 1 : 0,
-          pointerEvents: "none",
-        }} />
+        <div
+          style={{
+            ...styles.blurOverlay,
+            opacity: isDetailOpen ? 1 : 0,
+            pointerEvents: "none",
+          }}
+        />
 
         {/* ---- DETAIL PAGE — slides in from the right ---- */}
-        <div style={{
-          position: "absolute",
-          inset: 0,
-          zIndex: 50,
-          transition: "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease",
-          transform: isDetailOpen ? "translateX(0)" : "translateX(100%)",
-          opacity: isDetailOpen ? 1 : 0,
-          backgroundColor: "transparent",
-          pointerEvents: isDetailOpen ? "auto" : "none",
-        }}>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 50,
+            transition:
+              "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease",
+            transform: isDetailOpen ? "translateX(0)" : "translateX(100%)",
+            opacity: isDetailOpen ? 1 : 0,
+            backgroundColor: "transparent",
+            pointerEvents: isDetailOpen ? "auto" : "none",
+          }}
+        >
           <AssetDetailPage
             asset={selectedAsset}
             detail={detailData}
@@ -264,7 +275,6 @@ export default function Home() {
           isOpen={isStatsOpen}
           onClose={() => setIsStatsOpen(false)}
         />
-
       </main>
     </>
   );
