@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ArrowRight, X, ChartColumnBig } from "lucide-react";
 import { getModeColor, getStatusColor, getValueColor } from "@/lib/assetUtils";
 
@@ -64,11 +64,7 @@ export default function DetailPanel({
     >
       {displayedAsset && (
         <>
-          <button
-            style={styles.closeButton}
-            onClick={onDismiss}
-            aria-label="Close panel"
-          >
+          <button style={styles.closeButton} onClick={onDismiss} aria-label="Close panel">
             <X />
           </button>
 
@@ -97,11 +93,11 @@ export default function DetailPanel({
 
               {/* All assets */}
               <DetailRow
-                label="Maximum charge"
-                value={`${displayedAsset.max_charge_rate_mw} MW`}
+                label="Maximum power"
+                value={`${displayedAsset.max_discharge_rate_mw} MW`}
               />
               <DetailRow
-                label={`Current ${displayedAsset.power_mw < -0 ? "discharge" : "charge"}`}
+                label={`Current ${displayedAsset.power_mw < 0 ? "charge" : "power"}`}
                 value={`${displayedAsset.power_mw?.toFixed(2)} MW`}
                 valueColor={getValueColor(displayedAsset.power_mw)}
               />

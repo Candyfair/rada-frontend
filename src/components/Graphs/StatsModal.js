@@ -18,17 +18,16 @@ export default function StatsModal({ assetId, assets, isOpen, onClose }) {
 
   useEffect(() => {
     if (!isOpen) return;
-    const handleKey = (e) => { if (e.key === "Escape") onClose(); };
+    const handleKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [isOpen, onClose]);
 
   return (
     <>
-      <div
-        className={`${styles.overlay} ${isOpen ? "" : styles.hidden}`}
-        onClick={onClose}
-      />
+      <div className={`${styles.overlay} ${isOpen ? "" : styles.hidden}`} onClick={onClose} />
       <div
         className={`${styles.sheet} ${isOpen ? "" : styles.hidden}`}
         role="dialog"

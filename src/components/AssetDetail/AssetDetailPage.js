@@ -40,23 +40,15 @@ function DataBlock({ icon, children }) {
 // -------------------------------------------------------------------
 // MAIN COMPONENT
 // -------------------------------------------------------------------
-export default function AssetDetailPage({
-  asset,
-  detail,
-  loading,
-  error,
-  onBack,
-}) {
-
+export default function AssetDetailPage({ asset, detail, loading, error, onBack }) {
   const record = detail?.record ?? null;
   const isBattery = asset?.asset_type === "battery";
 
-  const dc = "var(--color-detail-text)";  // dc = defaultColor
+  const dc = "var(--color-detail-text)"; // dc = defaultColor
 
   return (
     <div style={styles.root}>
       <div style={styles.inner}>
-
         {/* ---- BACK BUTTON ---- */}
         <div style={styles.backRow}>
           <button style={styles.backButton} onClick={onBack} aria-label="Go back">
@@ -66,7 +58,6 @@ export default function AssetDetailPage({
 
         {/* ---- SCROLLABLE CONTENT ---- */}
         <div style={styles.scrollArea}>
-
           {/* Asset name — yellow panel block */}
           <div style={styles.nameBlock}>
             <span style={styles.nameText}>{asset?.name ?? "—"}</span>
@@ -94,13 +85,15 @@ export default function AssetDetailPage({
           {/* ---- CAPACITY BLOCK — batteries only ---- */}
           {isBattery && (
             <DataBlock icon={BatteryFull}>
-              <DataRow
-                label="Capacity"
-                value={record ? `${detail.max_capacity_mwh} MWh` : "—"}
-              />
+              <DataRow label="Capacity" value={record ? `${detail.max_capacity_mwh} MWh` : "—"} />
               <DataRow
                 label="Current capacity"
                 value={record ? `${record.energy_mwh} MWh` : "—"}
+                valueColor={record ? getValueColor(record.energy_mwh, dc) : undefined}
+              />
+              <DataRow
+                label="Battery state"
+                value={record ? `${record.power_mw < 0 ? "Charging" : "Discharging"}` : "—"}
                 valueColor={record ? getValueColor(record.energy_mwh, dc) : undefined}
               />
             </DataBlock>
@@ -168,7 +161,6 @@ export default function AssetDetailPage({
                 : "—"}
             </span>
           </div>
-
         </div>
       </div>
     </div>
