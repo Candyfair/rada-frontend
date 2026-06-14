@@ -106,23 +106,12 @@ The proxy routes forward to the following backend endpoints:
 
 ```
 src/
-├── app/
-│   ├── api/
-│   │   ├── assets/route.js          # Proxy → /assetslist
-│   │   ├── summary/route.js         # Proxy → /assets/summary
-│   │   └── asset-history/route.js   # Proxy → /assets/{id}/soc
-│   └── page.js                      # Root route
-├── components/                      # Reusable UI components
-├── hooks/
-│   ├── useAssets.js                 # Fleet list + 5-min polling
-│   ├── useFleetSummary.js           # Summary totals + 5-min polling
-│   ├── useAssetHistory.js           # Historical SoC (mode=D)
-│   └── useAssetDetail.js            # Latest SoC record (mode=S)
-├── lib/
-│   ├── assetUtils.js                # getBubbleColor(), asset helpers
-│   └── dateUtils.js                 # Timezone-aware date formatting
-└── styles/
-    └── tokens.css                   # CSS custom properties (HSL design tokens)
+├── app/          # Routes Next.js (App Router) + API proxy routes
+├── components/   # UI components organised by domain
+├── context/      # React contexts (theme, auth…)
+├── hooks/        # Data-fetching hooks with polling
+├── lib/          # Pure utilities (colours, dates, constants)
+└── styles/       # CSS design tokens
 ```
 
 ---

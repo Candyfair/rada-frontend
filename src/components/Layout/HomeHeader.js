@@ -25,57 +25,41 @@ export default function HomeHeader({
   onLogout,
   isDetailOpen,
 }) {
-
   const logoutOpacity = isDetailOpen ? 1 : 0.5;
 
   return (
     <div style={styles.header}>
-
       {/* Dark mode toggle */}
-      <button
-        style={styles.headerButton}
-        onClick={onThemeToggle}
-        aria-label="Toggle theme"
-      >
-        <span style={{
-          display: "flex",
-          animation: isThemeSpinning ? "spin-once 0.35s ease-in-out" : "none",
-        }}>
-          {theme === "light"
-            ? <Moon size={22} color="var(--color-icon)" />
-            : <Sun  size={22} color="var(--color-icon)" />
-          }
+      <button style={styles.headerButton} onClick={onThemeToggle} aria-label="Toggle theme">
+        <span
+          style={{
+            display: "flex",
+            animation: isThemeSpinning ? "spin-once 0.35s ease-in-out" : "none",
+          }}
+        >
+          {theme === "light" ? (
+            <Moon size={22} color="var(--color-icon)" />
+          ) : (
+            <Sun size={22} color="var(--color-icon)" />
+          )}
         </span>
       </button>
 
       {/* Chart button — stats modal placeholder */}
-      <button
-        style={styles.headerButton}
-        onClick={onChartPress}
-        aria-label="View statistics"
-      >
+      <button style={styles.headerButton} onClick={onChartPress} aria-label="View statistics">
         <ChartColumnBig size={22} color="var(--color-icon)" />
       </button>
 
       {/* Settings button — wrapped in relative div to anchor LogoutMenu */}
       <div style={{ position: "relative" }}>
-        <button
-          style={styles.settingsButton}
-          onClick={onSettingsPress}
-          aria-label="Open settings"
-        >
+        <button style={styles.settingsButton} onClick={onSettingsPress} aria-label="Open settings">
           <ShipWheelIcon size={22} color="var(--color-icon)" />
         </button>
 
         {isLogoutMenuOpen && (
-          <LogoutMenu
-            opacity={logoutOpacity}
-            onClose={onLogoutMenuClose}
-            onLogout={onLogout}
-          />
+          <LogoutMenu opacity={logoutOpacity} onClose={onLogoutMenuClose} onLogout={onLogout} />
         )}
       </div>
-
     </div>
   );
 }
@@ -94,7 +78,7 @@ const styles = {
     alignItems: "center",
     gap: 12,
     backgroundColor: "var(--color-bg-header)",
-    borderRadius: 8
+    borderRadius: 8,
   },
 
   headerButton: {
