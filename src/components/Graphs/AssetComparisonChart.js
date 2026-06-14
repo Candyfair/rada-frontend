@@ -12,24 +12,29 @@ import { format, parseISO } from "date-fns";
 import { ChevronDown, X } from "lucide-react";
 import { useAssetHistory } from "@/hooks/useAssetHistory";
 import styles from "./AssetComparisonChart.module.css";
-import { parisInputToUtcIso, utcToParisInput, utcToParisDate, formatParisDate, formatZonedToIsoString } from "@/lib/dateUtils";
+import {
+  parisInputToUtcIso,
+  utcToParisInput,
+  utcToParisDate,
+  formatZonedToIsoString,
+} from "@/lib/dateUtils";
 
 // Metrics available for Y axis — label shown in the UI, key in the record object,
 // and unit displayed on the axis
 const METRICS = [
-  { key: "power_mw",              label: "Power",           unit: "MW"  },
-  { key: "energy_mwh",            label: "Energy",          unit: "MWh" },
-  { key: "reactive_power_mvar",   label: "Reactive Power",  unit: "MVAr"},
-  { key: "power_factor",          label: "Power factor",    unit: "%"   },
-  { key: "temperature_celsius",  label: "Cell temperature",unit: "°C"  },
-  { key: "voltage",               label: "Voltage",         unit: "V"  },
-  { key: "current_amps",          label: "Current amps",    unit: "A" },
+  { key: "power_mw", label: "Power", unit: "MW" },
+  { key: "energy_mwh", label: "Energy", unit: "MWh" },
+  { key: "reactive_power_mvar", label: "Reactive Power", unit: "MVAr" },
+  { key: "power_factor", label: "Power factor", unit: "%" },
+  { key: "temperature_celsius", label: "Temperature", unit: "°C" },
+  { key: "voltage", label: "Voltage", unit: "V" },
+  { key: "current_amps", label: "Current amps", unit: "A" },
 ];
 
 // One distinct color per line — drawn from the existing design token palette
 const LINE_COLORS = [
   "hsl(189, 18%, 58%)", // --hsl-battery (teal)
-  "hsl(15, 71%, 66%)",  // --hsl-wind (orange)
+  "hsl(15, 71%, 66%)", // --hsl-wind (orange)
   "hsl(134, 23%, 57%)", // --hsl-solar (green)
   "hsl(351, 35%, 30%)", // --hsl-fault (dark red)
   "hsl(217, 89%, 61%)", // --color-value-negative (blue)
@@ -59,7 +64,6 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
       console.log("initialAssetId type:", typeof initialAssetId, initialAssetId);
     }
   }, [initialAssetId]);
-
 
   const batteries = assets ?? [];
 
@@ -92,7 +96,7 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
     setToInput(utcToParisInput(firstHistory.toTs));
   }, [histories, selectedIds]);
 
-   useEffect(() => {
+  useEffect(() => {
     function handleOutsideClick(e) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setIsDropdownOpen(false);
@@ -108,30 +112,35 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
     };
   }, [isDropdownOpen]);
 
-
   // ------------------------------------------------------------------
   // HANDLERS
   // ------------------------------------------------------------------
-  const handleAddBattery = useCallback((id) => {
-    if (selectedIds.includes(id)) return;
-    const newIds = [...selectedIds, id];
-    setSelectedIds(newIds);
+  const handleAddBattery = useCallback(
+    (id) => {
+      if (selectedIds.includes(id)) return;
+      const newIds = [...selectedIds, id];
+      setSelectedIds(newIds);
 
-    if (fromInput && toInput) {
-      newIds.forEach((assetId) => {
-        reloadAsset(assetId, parisInputToUtcIso(fromInput), parisInputToUtcIso(toInput));
-      });
-    } else {
-      initAsset(id);
-    }
+      if (fromInput && toInput) {
+        newIds.forEach((assetId) => {
+          reloadAsset(assetId, parisInputToUtcIso(fromInput), parisInputToUtcIso(toInput));
+        });
+      } else {
+        initAsset(id);
+      }
 
-    setIsDropdownOpen(false);
-  }, [selectedIds, fromInput, toInput, initAsset, reloadAsset]);
+      setIsDropdownOpen(false);
+    },
+    [selectedIds, fromInput, toInput, initAsset, reloadAsset]
+  );
 
-  const handleRemoveBattery = useCallback((id) => {
-    setSelectedIds((prev) => prev.filter((sid) => sid !== id));
-    removeAsset(id);
-  }, [removeAsset]);
+  const handleRemoveBattery = useCallback(
+    (id) => {
+      setSelectedIds((prev) => prev.filter((sid) => sid !== id));
+      removeAsset(id);
+    },
+    [removeAsset]
+  );
 
   // Apply the date range to all currently selected assets
   const handleApplyDateRange = useCallback(() => {
@@ -185,10 +194,10 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
   const isAnyLoading = selectedIds.some((id) => histories[id]?.isLoading);
 
   // Determine the total time range covered by the chart data, in hours
-  const totalHours = data.length > 1
-    ? (new Date(data[data.length - 1].timestamp) - new Date(data[0].timestamp))
-      / (1000 * 60 * 60)
-    : 0;
+  const totalHours =
+    data.length > 1
+      ? (new Date(data[data.length - 1].timestamp) - new Date(data[0].timestamp)) / (1000 * 60 * 60)
+      : 0;
 
   // Build explicit tick positions: first point, one per day change, last point.
   // This guarantees no duplicate day labels regardless of data density.
@@ -211,7 +220,6 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
       const lastTs = data[data.length - 1].timestamp;
       if (lastTs !== ticks[ticks.length - 1]) ticks.push(lastTs);
       return ticks;
-
     } else {
       // One tick per full hour — find data points closest to each hour boundary
       const ticks = [];
@@ -231,16 +239,18 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
   }, [data, totalHours]);
 
   // Format a tick — date only when it's a day boundary, time only for first/last
-  const formatXTick = useCallback((timestamp) => {
-    try {
-      const d = parseISO(timestamp);
-      if (totalHours > 24) return format(d, "dd/MM");
-      return format(d, "HH:00");
-    } catch {
-      return timestamp;
-    }
-  }, [totalHours]);
-
+  const formatXTick = useCallback(
+    (timestamp) => {
+      try {
+        const d = parseISO(timestamp);
+        if (totalHours > 24) return format(d, "dd/MM");
+        return format(d, "HH:00");
+      } catch {
+        return timestamp;
+      }
+    },
+    [totalHours]
+  );
 
   // Tooltip label — full date and time
   const formatTooltipLabel = (timestamp) => {
@@ -256,7 +266,6 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
 
   return (
     <div className={styles.wrapper}>
-
       {/* ---- Metric chips ---- */}
       <div className={styles.metricRow}>
         {METRICS.map((m) => (
@@ -291,13 +300,8 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
 
       {/* ---- Battery selector ---- */}
       <div className={styles.selectorWrapper} ref={dropdownRef}>
-        <div
-          className={styles.selectorBox}
-          onClick={() => setIsDropdownOpen((prev) => !prev)}
-        >
-          {selectedIds.length === 0 && (
-            <span className={styles.placeholder}>Select batteries...</span>
-          )}
+        <div className={styles.selectorBox} onClick={() => setIsDropdownOpen((prev) => !prev)}>
+          {selectedIds.length === 0 && <span className={styles.placeholder}>Select assets...</span>}
           {selectedIds.map((id) => {
             const battery = batteries.find((b) => String(b.id) === String(id));
             return (
@@ -350,9 +354,7 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
       </div>
 
       {/* ---- Chart ---- */}
-      {isAnyLoading && (
-        <p className={styles.loadingText}>Loading data...</p>
-      )}
+      {isAnyLoading && <p className={styles.loadingText}>Loading data...</p>}
 
       {/* Show empty state only when no asset is selected and nothing is loading */}
       {selectedIds.length === 0 && (
@@ -361,75 +363,71 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
 
       {selectedIds.length > 0 && (
         <div className={styles.chartWrapper}>
-        <div className={`${styles.chartInner} ${isAnyLoading ? styles.loading : ""}`}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={data}
-              margin={{ top: 4, right: 8, bottom: 0, left: 0 }}
-            >
-              <XAxis
-                dataKey="timestamp"
-                ticks={xTicks}
-                tickFormatter={(value, index) => formatXTick(value, index)}
-                tick={{ fontFamily: "var(--font-mono)", fontSize: 10 }}
-                tickLine={false}
-                axisLine={false}
-                interval={0}
-                angle={-35}
-                textAnchor="end"
-                height={50}
-              />
-              <YAxis
-                tickFormatter={formatYTick}
-                tick={{ fontFamily: "var(--font-mono)", fontSize: 10 }}
-                tickLine={false}
-                axisLine={false}
-                width={64}
-              />
-              {/* Reference line at zero — useful for power_mw where
-                  positive means charging, negative means discharging */}
-              <ReferenceLine y={0} stroke="var(--color-toggle-bg)" strokeDasharray="3 3" />
-              <Tooltip
-                labelFormatter={formatTooltipLabel}
-                contentStyle={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  backgroundColor: "var(--color-bg)",
-                  border: "1px solid var(--color-icon)",
-                  borderRadius: 6,
-                }}
-                labelStyle={{ color: "var(--color-text-secondary)" }}
-                formatter={(value, name) => {
-                  const battery = batteries.find((b) => String(b.id) === String(name));
-                  const label = battery?.name ?? `Asset ${name}`;
-                  return [`${value} ${activeMetric.unit}`, label];
-                }}
-              />
-              {selectedIds.map((id, index) => (
-                <Line
-                  key={String(id)}
-                  type="monotone"
-                  dataKey={String(id)}
-                  stroke={LINE_COLORS[index % LINE_COLORS.length]}
-                  strokeWidth={2}
-                  dot={false}
-                  // connectNulls false = gaps in the line when data is missing
-                  connectNulls={false}
-                  isAnimationActive={false}
+          <div className={`${styles.chartInner} ${isAnyLoading ? styles.loading : ""}`}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+                <XAxis
+                  dataKey="timestamp"
+                  ticks={xTicks}
+                  tickFormatter={(value, index) => formatXTick(value, index)}
+                  tick={{ fontFamily: "var(--font-mono)", fontSize: 10 }}
+                  tickLine={false}
+                  axisLine={false}
+                  interval={0}
+                  angle={-35}
+                  textAnchor="end"
+                  height={50}
                 />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+                <YAxis
+                  tickFormatter={formatYTick}
+                  tick={{ fontFamily: "var(--font-mono)", fontSize: 10 }}
+                  tickLine={false}
+                  axisLine={false}
+                  width={64}
+                />
+                {/* Reference line at zero — useful for power_mw where
+                  positive means charging, negative means discharging */}
+                <ReferenceLine y={0} stroke="var(--color-toggle-bg)" strokeDasharray="3 3" />
+                <Tooltip
+                  labelFormatter={formatTooltipLabel}
+                  contentStyle={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 11,
+                    backgroundColor: "var(--color-bg)",
+                    border: "1px solid var(--color-icon)",
+                    borderRadius: 6,
+                  }}
+                  labelStyle={{ color: "var(--color-text-secondary)" }}
+                  formatter={(value, name) => {
+                    const battery = batteries.find((b) => String(b.id) === String(name));
+                    const label = battery?.name ?? `Asset ${name}`;
+                    return [`${value} ${activeMetric.unit}`, label];
+                  }}
+                />
+                {selectedIds.map((id, index) => (
+                  <Line
+                    key={String(id)}
+                    type="monotone"
+                    dataKey={String(id)}
+                    stroke={LINE_COLORS[index % LINE_COLORS.length]}
+                    strokeWidth={2}
+                    dot={false}
+                    // connectNulls false = gaps in the line when data is missing
+                    connectNulls={false}
+                    isAnimationActive={false}
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
 
-      {isAnyLoading && (
-        <div className={styles.chartLoaderOverlay}>
-          <div className={styles.spinner} />
+          {isAnyLoading && (
+            <div className={styles.chartLoaderOverlay}>
+              <div className={styles.spinner} />
+            </div>
+          )}
         </div>
       )}
-    </div>
-  )}
-
     </div>
   );
 }
