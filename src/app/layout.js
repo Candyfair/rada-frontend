@@ -14,17 +14,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Grid Asset Manager",
-  description: "Fleet monitoring dashboard",
+  title: "RADA — Renewable Assets Data Analytics",
+  description:
+    "Real-time monitoring platform for renewable energy fleets. Track batteries, solar farms and wind turbines — live telemetry, historical charts, asset comparison.",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

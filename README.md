@@ -1,6 +1,6 @@
-# Grid Asset Manager — Frontend
+# RADA — Renewable Assets Data Analytics — Frontend
 
-A mobile-first React interface for monitoring a fleet of grid-scale energy assets (batteries, solar farms, wind turbines). Built as the frontend counterpart to the **[Grid Asset Manager backend](https://github.com/roadtowiganpier/grid-asset-manager)** developed by [Christian Baker](https://github.com/roadtowiganpier).
+A mobile-first React interface for monitoring a fleet of grid-scale energy assets (batteries, solar farms, wind turbines). Built as the frontend counterpart to the **[Renewable Assets Data Analytics backend](https://github.com/roadtowiganpier/grid-asset-manager)** developed by [Christian Baker](https://github.com/roadtowiganpier).
 
 ---
 
@@ -53,8 +53,8 @@ The backend must be accessible (locally or via network) before the frontend will
 
 ```bash
 # Clone the repository
-git clone https://github.com/Candyfair/grid-asset-manager-frontend.git
-cd grid-asset-manager-frontend
+git clone https://github.com/Candyfair/rada-frontend.git
+cd rada-frontend
 
 # Install dependencies
 npm install
@@ -149,4 +149,4 @@ No CORS configuration is required on the backend — all browser requests stay o
 
 ---
 
-*Grid Asset Manager Frontend · Next.js · D3.js · Recharts · CSS Modules · Vercel · 2026*
+*RADA — Renewable Assets Data Analytics Frontend · Next.js · D3.js · Recharts · CSS Modules · Vercel · 2026*
