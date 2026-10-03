@@ -66,8 +66,10 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
   // and trigger its initial data fetch
   useEffect(() => {
     if (initialAssetId == null) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- TODO(ts-migration): refactor, see migration plan phase 3
     setSelectedIds([initialAssetId]);
     initAsset(initialAssetId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- TODO(ts-migration): refactor, see migration plan phase 3
   }, [initialAssetId]);
 
   // When the first asset's data loads, populate the date inputs
@@ -77,6 +79,7 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
     const firstHistory = histories[selectedIds[0]];
     if (!firstHistory || firstHistory.isLoading || !firstHistory.fromTs) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- TODO(ts-migration): refactor, see migration plan phase 3
     setFromInput(utcToParisInput(firstHistory.fromTs));
     setToInput(utcToParisInput(firstHistory.toTs));
   }, [histories, selectedIds]);

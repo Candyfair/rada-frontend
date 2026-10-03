@@ -22,6 +22,7 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     const saved = localStorage.getItem("theme");
     if (saved === "dark" || saved === "light") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- TODO(ts-migration): refactor, see migration plan phase 3
       setTheme(saved);
       document.documentElement.setAttribute("data-theme", saved);
     }
