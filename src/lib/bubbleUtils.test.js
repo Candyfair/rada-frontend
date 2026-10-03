@@ -29,9 +29,9 @@ describe("getBubbleColor", () => {
   it.each(["fault", "curtailed", undefined])(
     "uses the fault colour for any non-active mode (%s), even when unreachable",
     (mode) => {
-      expect(
-        getBubbleColor(asset({ operational_mode: mode, asset_status: "unreachable" }))
-      ).toBe("#683138");
+      expect(getBubbleColor(asset({ operational_mode: mode, asset_status: "unreachable" }))).toBe(
+        "#683138"
+      );
     }
   );
 

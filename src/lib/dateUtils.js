@@ -14,9 +14,8 @@ export function parisInputToUtcIso(localDateTimeString) {
 // "2026-05-31T10:44:40" or "2026-05-31T10:44:40Z" → "2026-05-31T12:44"
 export function utcToParisInput(isoString) {
   if (!isoString) return "";
-  const normalized = isoString.includes("Z") || isoString.includes("+")
-    ? isoString
-    : isoString + "Z";
+  const normalized =
+    isoString.includes("Z") || isoString.includes("+") ? isoString : isoString + "Z";
   const date = new Date(normalized);
   if (isNaN(date.getTime())) return "";
   const parisDate = toZonedTime(date, TIMEZONE);
@@ -25,9 +24,8 @@ export function utcToParisInput(isoString) {
 
 // Convert a UTC ISO string to a Paris-time Date object
 export function utcToParisDate(isoString) {
-  const normalized = isoString.includes("Z") || isoString.includes("+")
-    ? isoString
-    : isoString + "Z";
+  const normalized =
+    isoString.includes("Z") || isoString.includes("+") ? isoString : isoString + "Z";
   return toZonedTime(new Date(normalized), TIMEZONE);
 }
 
@@ -40,12 +38,12 @@ export function formatParisDate(parisDate, pattern) {
 // Format a zoned date to a plain ISO-like string using its local time components.
 // Uses getFullYear/getMonth etc. to avoid any timezone re-conversion.
 export function formatZonedToIsoString(zonedDate) {
-  const year  = zonedDate.getFullYear();
+  const year = zonedDate.getFullYear();
   const month = String(zonedDate.getMonth() + 1).padStart(2, "0");
-  const day   = String(zonedDate.getDate()).padStart(2, "0");
+  const day = String(zonedDate.getDate()).padStart(2, "0");
   const hours = String(zonedDate.getHours()).padStart(2, "0");
-  const mins  = String(zonedDate.getMinutes()).padStart(2, "0");
-  const secs  = String(zonedDate.getSeconds()).padStart(2, "0");
+  const mins = String(zonedDate.getMinutes()).padStart(2, "0");
+  const secs = String(zonedDate.getSeconds()).padStart(2, "0");
   return `${year}-${month}-${day}T${hours}:${mins}:${secs}`;
 }
 

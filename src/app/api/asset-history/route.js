@@ -7,9 +7,7 @@ export async function GET(request) {
   const toTs = searchParams.get("to_ts");
 
   // Build the upstream URL — from_ts and to_ts are optional
-  const upstream = new URL(
-    `${process.env.API_BASE_URL}/assets/${assetId}/soc`
-  );
+  const upstream = new URL(`${process.env.API_BASE_URL}/assets/${assetId}/soc`);
   upstream.searchParams.set("mode", mode);
   if (fromTs) upstream.searchParams.set("from_ts", fromTs);
   if (toTs) upstream.searchParams.set("to_ts", toTs);

@@ -19,9 +19,9 @@ export default function ToggleSwitch({ enabled, onChange }) {
       <div
         style={{
           ...styles.thumb,
-          backgroundColor: enabled 
-          ? "var(--color-switch-thumb-on)"
-          : "var(--color-switch-thumb-off)",
+          backgroundColor: enabled
+            ? "var(--color-switch-thumb-on)"
+            : "var(--color-switch-thumb-off)",
           transform: enabled ? "translateX(20px)" : "translateX(2px)",
         }}
       />

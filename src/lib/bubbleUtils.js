@@ -9,13 +9,13 @@
 
 const COLORS = {
   // Asset type colours
-  battery:  "#7AA5AB",
+  battery: "#7AA5AB",
   solar: "#78AB84",
-  wind:     "#E68B6D",
+  wind: "#E68B6D",
 
   // State overrides
-  fault:       "#683138",  // any operational_mode that is not "active"
-  unreachable: "#E3E2DF",  // asset_status === "unreachable", only if mode is active
+  fault: "#683138", // any operational_mode that is not "active"
+  unreachable: "#E3E2DF", // asset_status === "unreachable", only if mode is active
 
   // Fallback if asset_type is unknown
   unknown: "#8E9AA0",

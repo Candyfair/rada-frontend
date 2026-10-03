@@ -89,16 +89,8 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
 
     const simulation = d3
       .forceSimulation([])
-      .force(
-        "center",
-        d3
-          .forceCenter(width / 2, height / 2)
-          .strength(CONFIG.CENTER_FORCE_STRENGTH),
-      )
-      .force(
-        "collide",
-        d3.forceCollide((d) => d.r + CONFIG.COLLISION_PADDING).strength(0.8),
-      )
+      .force("center", d3.forceCenter(width / 2, height / 2).strength(CONFIG.CENTER_FORCE_STRENGTH))
+      .force("collide", d3.forceCollide((d) => d.r + CONFIG.COLLISION_PADDING).strength(0.8))
       .force("x", d3.forceX(width / 2).strength(0.02))
       .force("y", d3.forceY(height / 2).strength(0.02))
       .force("float", floatForce)
@@ -110,10 +102,7 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
         const groups = gRef.current.querySelectorAll("g.bubble-node");
         nodesRef.current.forEach((node, i) => {
           if (groups[i]) {
-            groups[i].setAttribute(
-              "transform",
-              `translate(${node.x}, ${node.y})`,
-            );
+            groups[i].setAttribute("transform", `translate(${node.x}, ${node.y})`);
           }
         });
         updateLabelPositions();
@@ -138,7 +127,7 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
       d3.zoomIdentity
         .translate(width / 2, height / 2)
         .scale(initialScale)
-        .translate(-width / 2, -height / 2),
+        .translate(-width / 2, -height / 2)
     );
 
     zoomRef.current = zoom;
@@ -180,8 +169,7 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
     const currentIds = new Set(nodesRef.current.map((n) => n.id));
     const incomingIds = new Set(assets.map((a) => a.id));
     const sameSet =
-      currentIds.size === incomingIds.size &&
-      [...incomingIds].every((id) => currentIds.has(id));
+      currentIds.size === incomingIds.size && [...incomingIds].every((id) => currentIds.has(id));
 
     if (sameSet && nodesRef.current.length > 0) {
       // --- Silent poll: same assets, just update values ---
@@ -201,10 +189,7 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
       });
 
       simulationRef.current
-        .force(
-          "collide",
-          d3.forceCollide((d) => d.r + CONFIG.COLLISION_PADDING).strength(0.8),
-        )
+        .force("collide", d3.forceCollide((d) => d.r + CONFIG.COLLISION_PADDING).strength(0.8))
         .alpha(0.3)
         .restart();
 
@@ -247,10 +232,7 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
     });
 
     simulationRef.current
-      .force(
-        "collide",
-        d3.forceCollide((d) => d.r + CONFIG.COLLISION_PADDING).strength(0.8),
-      )
+      .force("collide", d3.forceCollide((d) => d.r + CONFIG.COLLISION_PADDING).strength(0.8))
       .alpha(0.5)
       .restart();
   }, [metric, assets, buildRadiusScale]);
@@ -312,10 +294,7 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
               ? `${Math.round(node.energy_mwh).toFixed(1)} MWh`
               : `${rawPower >= 0 ? "" : "-"}${Math.abs(rawPower).toFixed(2)} MW`;
 
-          const fontSize = Math.max(
-            8,
-            Math.min(node.r * currentScale * 0.24, 13 * currentScale),
-          );
+          const fontSize = Math.max(8, Math.min(node.r * currentScale * 0.24, 13 * currentScale));
           const isSelected = node.id === selectedId;
 
           return (
@@ -361,11 +340,7 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
                   fontSize: fontSize * 0.88,
                   fontFamily: "var(--font-serif)",
                   letterSpacing: "normal",
-                  color: isNegative
-                    ? "#FF6B6B"
-                    : isSelected
-                      ? "#e0f7fa"
-                      : "rgba(255,255,255,0.7)",
+                  color: isNegative ? "#FF6B6B" : isSelected ? "#e0f7fa" : "rgba(255,255,255,0.7)",
                   lineHeight: 1.1,
                   textAlign: "center",
                 }}

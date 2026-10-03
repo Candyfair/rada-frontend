@@ -180,17 +180,9 @@ export default function Home() {
 
         {/* ---- TOTAL POWER BADGE ---- */}
         <TotalPowerBadge
-          value={
-            showToggle && metric === "energy_mwh"
-              ? displayedEnergy
-              : displayedPower
-          }
+          value={showToggle && metric === "energy_mwh" ? displayedEnergy : displayedPower}
           unit={showToggle && metric === "energy_mwh" ? "MWh" : "MW"}
-          label={
-            showToggle && metric === "energy_mwh"
-              ? "Total capacity"
-              : "Total power"
-          }
+          label={showToggle && metric === "energy_mwh" ? "Total capacity" : "Total power"}
           isExpanded={isFilterOpen}
           isDetailOpen={isDetailOpen}
         />
@@ -248,8 +240,7 @@ export default function Home() {
             position: "absolute",
             inset: 0,
             zIndex: 50,
-            transition:
-              "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease",
+            transition: "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease",
             transform: isDetailOpen ? "translateX(0)" : "translateX(100%)",
             opacity: isDetailOpen ? 1 : 0,
             backgroundColor: "transparent",

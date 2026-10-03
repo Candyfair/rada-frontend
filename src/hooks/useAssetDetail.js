@@ -21,7 +21,7 @@ export function useAssetDetail(assetId) {
       .then((json) => setData(json))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-    }, [assetId]);
+  }, [assetId]);
 
   return { data, loading, error };
 }

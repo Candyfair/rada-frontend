@@ -12,11 +12,7 @@ import { format, parseISO } from "date-fns";
 import { ChevronDown, X } from "lucide-react";
 import { useAssetHistory } from "@/hooks/useAssetHistory";
 import styles from "./AssetComparisonChart.module.css";
-import {
-  parisInputToUtcIso,
-  utcToParisInput,
-  bucketTimestamp,
-} from "@/lib/dateUtils";
+import { parisInputToUtcIso, utcToParisInput, bucketTimestamp } from "@/lib/dateUtils";
 
 // Metrics available for Y axis — label shown in the UI, key in the record object,
 // and unit displayed on the axis
