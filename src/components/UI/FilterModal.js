@@ -18,13 +18,12 @@ import { CircleCheckBig } from "lucide-react";
 import ToggleSwitch from "./ToggleSwitch";
 
 const ASSET_TYPES = [
-  { key: "battery",  label: "Battery" },
-  { key: "solar",    label: "Solar PV" },
-  { key: "wind",     label: "Wind" },
+  { key: "battery", label: "Battery" },
+  { key: "solar", label: "Solar PV" },
+  { key: "wind", label: "Wind" },
 ];
 
 export default function FilterModal({ activeFilters, onChange, onClose }) {
-
   // ------------------------------------------------------------------
   // HANDLERS
   // ------------------------------------------------------------------
@@ -67,18 +66,13 @@ export default function FilterModal({ activeFilters, onChange, onClose }) {
   return (
     // Backdrop — full screen, blurs the map behind, closes on tap
     <div style={styles.backdrop} onClick={onClose}>
-
       {/* Modal card — stop propagation so tapping inside doesn't close */}
       <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-
         {/* Filter rows — individual types first */}
         {ASSET_TYPES.map(({ key, label }) => (
           <div key={key} style={styles.row}>
             <span style={styles.label}>{label}</span>
-            <ToggleSwitch
-              enabled={activeFilters.has(key)}
-              onChange={() => handleTypeToggle(key)}
-            />
+            <ToggleSwitch enabled={activeFilters.has(key)} onChange={() => handleTypeToggle(key)} />
           </div>
         ))}
 
@@ -88,10 +82,7 @@ export default function FilterModal({ activeFilters, onChange, onClose }) {
         {/* View all — last row, mutually exclusive */}
         <div style={styles.row}>
           <span style={styles.labelAll}>View all</span>
-          <ToggleSwitch
-            enabled={activeFilters.has("all")}
-            onChange={handleViewAllToggle}
-          />
+          <ToggleSwitch enabled={activeFilters.has("all")} onChange={handleViewAllToggle} />
         </div>
 
         {/* Confirm button — centred at the bottom */}
@@ -100,7 +91,6 @@ export default function FilterModal({ activeFilters, onChange, onClose }) {
             <CircleCheckBig size={32} color="var(--color-modal-border)" />
           </button>
         </div>
-
       </div>
     </div>
   );

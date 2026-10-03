@@ -6,18 +6,24 @@
 // Returns the correct colour token for operational_mode values
 export function getModeColor(mode, defaultColor = "var(--color-panel-value)") {
   switch (mode) {
-    case "active":    return "var(--color-status-active)";
-    case "fault":     return "var(--color-status-fault)";
-    case "curtailed": return "var(--color-status-curtailed)";
-    default:          return defaultColor;
+    case "active":
+      return "var(--color-status-active)";
+    case "fault":
+      return "var(--color-status-fault)";
+    case "curtailed":
+      return "var(--color-status-curtailed)";
+    default:
+      return defaultColor;
   }
 }
 
 // Returns the correct colour token for asset_status values
 export function getStatusColor(status, defaultColor = "var(--color-panel-value)") {
   switch (status) {
-    case "communicating": return "var(--color-status-active)";
-    default:              return defaultColor;
+    case "communicating":
+      return "var(--color-status-active)";
+    default:
+      return defaultColor;
   }
 }
 

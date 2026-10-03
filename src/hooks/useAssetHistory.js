@@ -52,7 +52,6 @@ export function useAssetHistory() {
           error: null,
         },
       }));
-
     } catch (err) {
       setHistories((prev) => ({
         ...prev,
@@ -65,22 +64,28 @@ export function useAssetHistory() {
     }
   }, []);
 
-  const initAsset = useCallback((assetId) => {
-    if (histories[assetId]?.records?.length > 0) return;
+  const initAsset = useCallback(
+    (assetId) => {
+      if (histories[assetId]?.records?.length > 0) return;
 
-    const now = new Date();
-    const fiveHoursAgo = new Date(now.getTime() - 5 * 60 * 60 * 1000);
+      const now = new Date();
+      const fiveHoursAgo = new Date(now.getTime() - 5 * 60 * 60 * 1000);
 
-    // Send full UTC ISO strings with Z suffix as required by the API
-    const toTs = now.toISOString();
-    const fromTs = fiveHoursAgo.toISOString();
+      // Send full UTC ISO strings with Z suffix as required by the API
+      const toTs = now.toISOString();
+      const fromTs = fiveHoursAgo.toISOString();
 
-    fetchRecords(assetId, fromTs, toTs);
-  }, [histories, fetchRecords]);
+      fetchRecords(assetId, fromTs, toTs);
+    },
+    [histories, fetchRecords]
+  );
 
-  const reloadAsset = useCallback((assetId, fromTimestamp, toTimestamp) => {
-    fetchRecords(assetId, fromTimestamp, toTimestamp);
-  }, [fetchRecords]);
+  const reloadAsset = useCallback(
+    (assetId, fromTimestamp, toTimestamp) => {
+      fetchRecords(assetId, fromTimestamp, toTimestamp);
+    },
+    [fetchRecords]
+  );
 
   const removeAsset = useCallback((assetId) => {
     setHistories((prev) => {

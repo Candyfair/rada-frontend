@@ -12,12 +12,7 @@ import { format, parseISO } from "date-fns";
 import { ChevronDown, X } from "lucide-react";
 import { useAssetHistory } from "@/hooks/useAssetHistory";
 import styles from "./AssetComparisonChart.module.css";
-import {
-  parisInputToUtcIso,
-  utcToParisInput,
-  utcToParisDate,
-  formatZonedToIsoString,
-} from "@/lib/dateUtils";
+import { parisInputToUtcIso, utcToParisInput, bucketTimestamp } from "@/lib/dateUtils";
 
 // Metrics available for Y axis — label shown in the UI, key in the record object,
 // and unit displayed on the axis
@@ -39,16 +34,6 @@ const LINE_COLORS = [
   "hsl(351, 35%, 30%)", // --hsl-fault (dark red)
   "hsl(217, 89%, 61%)", // --color-value-negative (blue)
 ];
-
-// Convert a UTC timestamp to Paris time, then round to nearest 10-minute bucket.
-// This ensures records from different assets align on the same X axis
-// regardless of sub-minute recording offsets.
-function bucketTimestamp(isoString) {
-  const parisDate = utcToParisDate(isoString);
-  const minutes = parisDate.getMinutes();
-  parisDate.setMinutes(Math.round(minutes / 10) * 10, 0, 0);
-  return formatZonedToIsoString(parisDate);
-}
 
 // initialAssetId — pre-selected asset id or null
 // batteries      — array of battery assets from useAssets()
@@ -81,8 +66,10 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
   // and trigger its initial data fetch
   useEffect(() => {
     if (initialAssetId == null) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- TODO(ts-migration): refactor, see migration plan phase 3
     setSelectedIds([initialAssetId]);
     initAsset(initialAssetId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- TODO(ts-migration): refactor, see migration plan phase 3
   }, [initialAssetId]);
 
   // When the first asset's data loads, populate the date inputs
@@ -92,6 +79,7 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
     const firstHistory = histories[selectedIds[0]];
     if (!firstHistory || firstHistory.isLoading || !firstHistory.fromTs) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- TODO(ts-migration): refactor, see migration plan phase 3
     setFromInput(utcToParisInput(firstHistory.fromTs));
     setToInput(utcToParisInput(firstHistory.toTs));
   }, [histories, selectedIds]);

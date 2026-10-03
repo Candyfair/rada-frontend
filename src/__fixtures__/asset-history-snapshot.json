@@ -1,0 +1,19 @@
+{
+  "asset_id": 1,
+  "asset_name": "Tesla Megapack 2 XL - Unit 01",
+  "eic_code": "17W-TM2XL-001---X",
+  "asset_type": "battery",
+  "max_capacity_mwh": 4,
+  "record": {
+    "timestamp": "2026-10-03T18:39:51.733458+00:00",
+    "operational_mode": "active",
+    "asset_status": "communicating",
+    "energy_mwh": 0,
+    "power_mw": 1.543,
+    "reactive_power_mvar": 0.52,
+    "power_factor": 0.9641,
+    "voltage": 398.5587,
+    "current_amps": 3.87,
+    "temperature_celsius": 30.83
+  }
+}

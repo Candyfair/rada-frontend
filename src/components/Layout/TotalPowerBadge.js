@@ -9,7 +9,13 @@
 // position, opacity and width simultaneously.
 // Phases overlap naturally because each element animates independently.
 
-  export default function TotalPowerBadge({ value, unit = "MW", label = "Total power", isExpanded, isDetailOpen }) {
+export default function TotalPowerBadge({
+  value,
+  unit = "MW",
+  label = "Total power",
+  isExpanded,
+  isDetailOpen,
+}) {
   // Formats the power value — shows a dash while data is loading
   function formatPower(value) {
     if (value === null || value === undefined) return `— ${unit}`;
@@ -19,38 +25,34 @@
   return (
     <>
       {/* ---- SMALL BADGE — top left ---- */}
-      <div style={{
-        ...styles.badge,
-        top: 12,
-        left: 12,
-        opacity: isExpanded || isDetailOpen ? 0 : 1,
-        pointerEvents: isExpanded || isDetailOpen ? "none" : "auto",
-        transform: isExpanded
-          ? "translate(40px, 100px)"   // slides toward bottom-left as it fades
-          : "translate(0, 0)",
-        transition: [
-          "opacity 0.2s ease",
-          "transform 0.2s ease",
-        ].join(", "),
-      }}>
+      <div
+        style={{
+          ...styles.badge,
+          top: 12,
+          left: 12,
+          opacity: isExpanded || isDetailOpen ? 0 : 1,
+          pointerEvents: isExpanded || isDetailOpen ? "none" : "auto",
+          transform: isExpanded
+            ? "translate(40px, 100px)" // slides toward bottom-left as it fades
+            : "translate(0, 0)",
+          transition: ["opacity 0.2s ease", "transform 0.2s ease"].join(", "),
+        }}
+      >
         <span style={styles.text}>{formatPower(value)}</span>
       </div>
 
       {/* ---- LARGE BADGE — bottom center ---- */}
-      <div style={{
-        ...styles.badge,
-        bottom: 32,
-        left: "50%",
-        transform: isExpanded
-          ? "translateX(-50%)"
-          : "translateX(-50%) translate(-40px, -40px)", // starts from top-left area
-        opacity: isExpanded && !isDetailOpen ? 1 : 0,
-        pointerEvents: isExpanded && !isDetailOpen ? "auto" : "none",
-        transition: [
-          "opacity 0.2s ease",
-          "transform 0.2s ease",
-        ].join(", "),
-      }}>
+      <div
+        style={{
+          ...styles.badge,
+          bottom: 32,
+          left: "50%",
+          transform: isExpanded ? "translateX(-50%)" : "translateX(-50%) translate(-40px, -40px)", // starts from top-left area
+          opacity: isExpanded && !isDetailOpen ? 1 : 0,
+          pointerEvents: isExpanded && !isDetailOpen ? "auto" : "none",
+          transition: ["opacity 0.2s ease", "transform 0.2s ease"].join(", "),
+        }}
+      >
         <span style={styles.textLarge}>
           {isExpanded ? `${label}: ${formatPower(value)}` : formatPower(value)}
         </span>
@@ -85,5 +87,5 @@ const styles = {
 
   textLarge: {
     fontSize: 20,
-  }
+  },
 };

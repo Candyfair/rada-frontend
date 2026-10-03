@@ -18,7 +18,6 @@ export default function LoginPage() {
 
   return (
     <div style={styles.root}>
-
       {/* ---- APP TITLE ---- */}
       <h1 style={styles.appTitle}>Asset Grid Manager</h1>
 
@@ -28,7 +27,9 @@ export default function LoginPage() {
 
         {/* Email field */}
         <div style={styles.fieldGroup}>
-          <label style={styles.label} htmlFor="email">Email</label>
+          <label style={styles.label} htmlFor="email">
+            Email
+          </label>
           <input
             id="email"
             type="email"
@@ -42,7 +43,9 @@ export default function LoginPage() {
 
         {/* Password field */}
         <div style={styles.fieldGroup}>
-          <label style={styles.label} htmlFor="password">Password</label>
+          <label style={styles.label} htmlFor="password">
+            Password
+          </label>
           <div style={styles.passwordWrapper}>
             <input
               id="password"
@@ -57,10 +60,11 @@ export default function LoginPage() {
               onClick={() => setShowPassword((prev) => !prev)}
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
-              {showPassword
-                ? <EyeOff size={18} color="var(--color-login-eye)" />
-                : <Eye    size={18} color="var(--color-login-eye)" />
-              }
+              {showPassword ? (
+                <EyeOff size={18} color="var(--color-login-eye)" />
+              ) : (
+                <Eye size={18} color="var(--color-login-eye)" />
+              )}
             </button>
           </div>
         </div>
@@ -90,14 +94,9 @@ export default function LoginPage() {
         </button>
 
         {/* Submit — the checkmark icon from the Figma maquette */}
-        <button
-          style={styles.submitButton}
-          onClick={handleSubmit}
-          aria-label="Login"
-        >
+        <button style={styles.submitButton} onClick={handleSubmit} aria-label="Login">
           ✓
         </button>
-
       </div>
     </div>
   );

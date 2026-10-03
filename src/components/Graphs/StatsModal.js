@@ -47,6 +47,7 @@ export default function StatsModal({ assetId, assets, isOpen, onClose }) {
                 which resets all state inside AssetComparisonChart */}
             {isOpen && (
               <AssetComparisonChart
+                /* eslint-disable-next-line react-hooks/refs -- TODO(ts-migration): refactor, see migration plan phase 3 */
                 key={mountKeyRef.current}
                 initialAssetId={assetId}
                 assets={assets}

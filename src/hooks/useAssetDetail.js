@@ -10,6 +10,7 @@ export function useAssetDetail(assetId) {
   useEffect(() => {
     if (!assetId) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- TODO(ts-migration): refactor, see migration plan phase 3
     setLoading(true);
     setError(null);
 
@@ -21,7 +22,7 @@ export function useAssetDetail(assetId) {
       .then((json) => setData(json))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-    }, [assetId]);
+  }, [assetId]);
 
   return { data, loading, error };
 }

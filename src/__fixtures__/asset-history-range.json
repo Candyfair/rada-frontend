@@ -1,0 +1,86 @@
+{
+  "asset_id": 1,
+  "asset_name": "Tesla Megapack 2 XL - Unit 01",
+  "eic_code": "17W-TM2XL-001---X",
+  "asset_type": "battery",
+  "max_capacity_mwh": 4,
+  "record_count": 6,
+  "resolution_minutes": 10,
+  "downsampled": false,
+  "from_ts": "2026-10-03T15:00:00+00:00",
+  "to_ts": "2026-10-03T16:00:00+00:00",
+  "records": [
+    {
+      "timestamp": "2026-10-03T15:59:51.743283+00:00",
+      "operational_mode": "curtailed",
+      "asset_status": "communicating",
+      "energy_mwh": 2.358,
+      "power_mw": -0.074,
+      "reactive_power_mvar": 0.8095,
+      "power_factor": 0.9656,
+      "voltage": 395.8709,
+      "current_amps": 0.19,
+      "temperature_celsius": 28.58
+    },
+    {
+      "timestamp": "2026-10-03T15:49:51.729646+00:00",
+      "operational_mode": "active",
+      "asset_status": "communicating",
+      "energy_mwh": 2.346,
+      "power_mw": -0.149,
+      "reactive_power_mvar": 0.7011,
+      "power_factor": 0.9633,
+      "voltage": 395.4363,
+      "current_amps": 0.38,
+      "temperature_celsius": 28.03
+    },
+    {
+      "timestamp": "2026-10-03T15:39:51.729397+00:00",
+      "operational_mode": "active",
+      "asset_status": "communicating",
+      "energy_mwh": 2.321,
+      "power_mw": -0.246,
+      "reactive_power_mvar": 0.5454,
+      "power_factor": 0.9662,
+      "voltage": 396.9274,
+      "current_amps": 0.62,
+      "temperature_celsius": 27.66
+    },
+    {
+      "timestamp": "2026-10-03T15:29:51.730999+00:00",
+      "operational_mode": "active",
+      "asset_status": "communicating",
+      "energy_mwh": 2.28,
+      "power_mw": -0.311,
+      "reactive_power_mvar": 0.6871,
+      "power_factor": 0.9626,
+      "voltage": 395.6627,
+      "current_amps": 0.79,
+      "temperature_celsius": 28.84
+    },
+    {
+      "timestamp": "2026-10-03T15:19:51.729806+00:00",
+      "operational_mode": "active",
+      "asset_status": "communicating",
+      "energy_mwh": 2.228,
+      "power_mw": -0.411,
+      "reactive_power_mvar": 0.5231,
+      "power_factor": 0.9613,
+      "voltage": 394.5515,
+      "current_amps": 1.04,
+      "temperature_celsius": 29.93
+    },
+    {
+      "timestamp": "2026-10-03T15:09:51.727945+00:00",
+      "operational_mode": "active",
+      "asset_status": "communicating",
+      "energy_mwh": 2.16,
+      "power_mw": -0.515,
+      "reactive_power_mvar": 0.267,
+      "power_factor": 0.9594,
+      "voltage": 395.7916,
+      "current_amps": 1.3,
+      "temperature_celsius": 30.89
+    }
+  ]
+}
