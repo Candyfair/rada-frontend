@@ -15,8 +15,7 @@ import styles from "./AssetComparisonChart.module.css";
 import {
   parisInputToUtcIso,
   utcToParisInput,
-  utcToParisDate,
-  formatZonedToIsoString,
+  bucketTimestamp,
 } from "@/lib/dateUtils";
 
 // Metrics available for Y axis — label shown in the UI, key in the record object,
@@ -39,16 +38,6 @@ const LINE_COLORS = [
   "hsl(351, 35%, 30%)", // --hsl-fault (dark red)
   "hsl(217, 89%, 61%)", // --color-value-negative (blue)
 ];
-
-// Convert a UTC timestamp to Paris time, then round to nearest 10-minute bucket.
-// This ensures records from different assets align on the same X axis
-// regardless of sub-minute recording offsets.
-function bucketTimestamp(isoString) {
-  const parisDate = utcToParisDate(isoString);
-  const minutes = parisDate.getMinutes();
-  parisDate.setMinutes(Math.round(minutes / 10) * 10, 0, 0);
-  return formatZonedToIsoString(parisDate);
-}
 
 // initialAssetId — pre-selected asset id or null
 // batteries      — array of battery assets from useAssets()

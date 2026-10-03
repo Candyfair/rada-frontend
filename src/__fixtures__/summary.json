@@ -1,0 +1,27 @@
+{
+  "total_power_mw": 833.36,
+  "total_energy_mwh": 0,
+  "total_reactive_mvar": 239.266,
+  "by_asset_type": {
+    "all": {
+      "power_mw": 833.36,
+      "energy_mwh": 0,
+      "asset_count": 48
+    },
+    "battery": {
+      "power_mw": 25.3,
+      "energy_mwh": 0,
+      "asset_count": 30
+    },
+    "solar": {
+      "power_mw": 140.407,
+      "energy_mwh": 0,
+      "asset_count": 9
+    },
+    "wind": {
+      "power_mw": 667.653,
+      "energy_mwh": 0,
+      "asset_count": 9
+    }
+  }
+}

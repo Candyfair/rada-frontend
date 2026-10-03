@@ -48,3 +48,13 @@ export function formatZonedToIsoString(zonedDate) {
   const secs  = String(zonedDate.getSeconds()).padStart(2, "0");
   return `${year}-${month}-${day}T${hours}:${mins}:${secs}`;
 }
+
+// Convert a UTC timestamp to Paris time, then round to nearest 10-minute bucket.
+// This ensures records from different assets align on the same X axis
+// regardless of sub-minute recording offsets.
+export function bucketTimestamp(isoString) {
+  const parisDate = utcToParisDate(isoString);
+  const minutes = parisDate.getMinutes();
+  parisDate.setMinutes(Math.round(minutes / 10) * 10, 0, 0);
+  return formatZonedToIsoString(parisDate);
+}
