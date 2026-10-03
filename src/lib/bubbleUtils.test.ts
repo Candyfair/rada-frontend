@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
-import assets from "@/__fixtures__/assets.json";
+import { assets } from "@/__fixtures__";
 import { getBubbleColor, getMetricValue } from "./bubbleUtils";
 
-const asset = (overrides) => ({
-  asset_type: "battery",
-  operational_mode: "active",
-  asset_status: "communicating",
-  ...overrides,
-});
+// Built from loose overrides on purpose: the tests also cover values the
+// API types do not allow (unknown type, missing mode)
+const asset = (overrides: Record<string, unknown>) =>
+  ({
+    asset_type: "battery",
+    operational_mode: "active",
+    asset_status: "communicating",
+    ...overrides,
+  }) as Parameters<typeof getBubbleColor>[0];
 
 describe("getBubbleColor", () => {
   it.each([

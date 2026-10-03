@@ -4,7 +4,7 @@ const TIMEZONE = "Europe/Paris";
 
 // Convert a datetime-local input value (Paris local time) to a UTC ISO string
 // suitable for sending to the API
-export function parisInputToUtcIso(localDateTimeString) {
+export function parisInputToUtcIso(localDateTimeString: string): string {
   const date = new Date(localDateTimeString);
   if (isNaN(date.getTime())) return localDateTimeString;
   return date.toISOString();
@@ -12,7 +12,7 @@ export function parisInputToUtcIso(localDateTimeString) {
 
 // Convert a UTC ISO string to a Paris time string formatted for datetime-local inputs
 // "2026-05-31T10:44:40" or "2026-05-31T10:44:40Z" → "2026-05-31T12:44"
-export function utcToParisInput(isoString) {
+export function utcToParisInput(isoString: string | null | undefined): string {
   if (!isoString) return "";
   const normalized =
     isoString.includes("Z") || isoString.includes("+") ? isoString : isoString + "Z";
@@ -23,7 +23,7 @@ export function utcToParisInput(isoString) {
 }
 
 // Convert a UTC ISO string to a Paris-time Date object
-export function utcToParisDate(isoString) {
+export function utcToParisDate(isoString: string): Date {
   const normalized =
     isoString.includes("Z") || isoString.includes("+") ? isoString : isoString + "Z";
   return toZonedTime(new Date(normalized), TIMEZONE);
@@ -31,13 +31,13 @@ export function utcToParisDate(isoString) {
 
 // Format a Paris-zoned Date object to a plain ISO-like string without offset
 // Used for bucketing timestamps into consistent keys
-export function formatParisDate(parisDate, pattern) {
+export function formatParisDate(parisDate: Date, pattern: string): string {
   return formatTz(parisDate, pattern, { timeZone: TIMEZONE });
 }
 
 // Format a zoned date to a plain ISO-like string using its local time components.
 // Uses getFullYear/getMonth etc. to avoid any timezone re-conversion.
-export function formatZonedToIsoString(zonedDate) {
+export function formatZonedToIsoString(zonedDate: Date): string {
   const year = zonedDate.getFullYear();
   const month = String(zonedDate.getMonth() + 1).padStart(2, "0");
   const day = String(zonedDate.getDate()).padStart(2, "0");
@@ -50,7 +50,7 @@ export function formatZonedToIsoString(zonedDate) {
 // Convert a UTC timestamp to Paris time, then round to nearest 10-minute bucket.
 // This ensures records from different assets align on the same X axis
 // regardless of sub-minute recording offsets.
-export function bucketTimestamp(isoString) {
+export function bucketTimestamp(isoString: string): string {
   const parisDate = utcToParisDate(isoString);
   const minutes = parisDate.getMinutes();
   parisDate.setMinutes(Math.round(minutes / 10) * 10, 0, 0);

@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import history from "@/__fixtures__/asset-history-range.json";
+import { historyRange as history } from "@/__fixtures__";
 import {
   bucketTimestamp,
   formatParisDate,
@@ -14,13 +14,14 @@ import {
 const HOST_TIMEZONES = ["UTC", "Europe/Paris", "America/New_York", "Asia/Tokyo"];
 
 describe.each(HOST_TIMEZONES)("with the host timezone set to %s", (tz) => {
-  let previousTz;
+  let previousTz: string | undefined;
   beforeAll(() => {
     previousTz = process.env.TZ;
     process.env.TZ = tz;
   });
   afterAll(() => {
-    process.env.TZ = previousTz;
+    if (previousTz === undefined) delete process.env.TZ;
+    else process.env.TZ = previousTz;
   });
 
   describe("utcToParisInput", () => {
@@ -91,7 +92,8 @@ describe("utcToParisDate", () => {
 
   // Known bug: unlike utcToParisInput, there is no guard on missing input.
   it.fails("does not throw on a missing timestamp", () => {
-    expect(() => utcToParisDate(null)).not.toThrow();
+    // Cast: JS callers can still pass null until every caller is typed
+    expect(() => utcToParisDate(null as unknown as string)).not.toThrow();
   });
 });
 

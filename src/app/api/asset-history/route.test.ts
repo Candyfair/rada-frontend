@@ -1,22 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import notFound from "@/__fixtures__/asset-not-found.json";
-import snapshot from "@/__fixtures__/asset-history-snapshot.json";
+import { assetNotFound as notFound, historySnapshot as snapshot } from "@/__fixtures__";
 import { GET } from "./route";
 
 const BACKEND = "https://backend.test";
 
-function request(query) {
+function request(query: string) {
   return new Request(`http://localhost/api/asset-history?${query}`);
 }
 
-function mockBackend(body, status = 200) {
-  const fetchMock = vi.fn(async () => Response.json(body, { status }));
+function mockBackend(body: unknown, status = 200) {
+  const fetchMock = vi.fn<typeof fetch>(async () => Response.json(body, { status }));
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
 }
 
 // URL actually requested from the backend
-const calledUrl = (fetchMock) => new URL(fetchMock.mock.calls[0][0]);
+const calledUrl = (fetchMock: ReturnType<typeof mockBackend>) =>
+  new URL(String(fetchMock.mock.calls[0]?.[0]));
 
 beforeEach(() => {
   vi.stubEnv("API_BASE_URL", BACKEND);
@@ -39,7 +39,7 @@ describe("GET /api/asset-history", () => {
     const url = calledUrl(fetchMock);
     expect(url.origin + url.pathname).toBe(`${BACKEND}/assets/1/soc`);
     expect(url.searchParams.get("mode")).toBe("S");
-    expect(fetchMock.mock.calls[0][1].headers).toEqual({ "X-API-Key": "secret-key" });
+    expect(fetchMock.mock.calls[0]?.[1]?.headers).toEqual({ "X-API-Key": "secret-key" });
   });
 
   it("forwards the optional time range", async () => {

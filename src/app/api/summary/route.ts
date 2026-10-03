@@ -1,7 +1,9 @@
-export async function GET() {
+export async function GET(): Promise<Response> {
   const res = await fetch(`${process.env.API_BASE_URL}/assets/summary`, {
     headers: {
-      "X-API-Key": process.env.API_KEY,
+      // An unset key used to be sent as the string "undefined": an empty
+      // value is rejected by the backend all the same
+      "X-API-Key": process.env.API_KEY ?? "",
     },
     cache: "no-store",
   });
