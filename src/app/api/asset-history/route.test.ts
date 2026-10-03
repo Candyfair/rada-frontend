@@ -54,6 +54,14 @@ describe("GET /api/asset-history", () => {
     expect(url.searchParams.get("to_ts")).toBe("2026-10-03T16:00:00Z");
   });
 
+  it("forwards the limit param", async () => {
+    const fetchMock = mockBackend({ records: [] });
+
+    await GET(request("asset_id=1&mode=D&limit=30"));
+
+    expect(calledUrl(fetchMock).searchParams.get("limit")).toBe("30");
+  });
+
   it("propagates the backend status and body", async () => {
     mockBackend(notFound, 404);
 
@@ -79,6 +87,9 @@ describe("GET /api/asset-history", () => {
       ["missing mode", "asset_id=1"],
       ["invalid from_ts", "asset_id=1&mode=D&from_ts=yesterday&to_ts=2026-10-03T16:00:00Z"],
       ["invalid to_ts", "asset_id=1&mode=D&from_ts=2026-10-03T15:00:00Z&to_ts=2026-10-03"],
+      ["zero limit", "asset_id=1&mode=D&limit=0"],
+      ["non-numeric limit", "asset_id=1&mode=D&limit=all"],
+      ["too large limit", "asset_id=1&mode=D&limit=10000"],
     ])("%s → 400 without calling the backend", async (_, query) => {
       const fetchMock = mockBackend({});
 
