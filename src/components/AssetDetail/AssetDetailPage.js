@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { BatteryFull, Zap, Thermometer, Unplug } from "lucide-react";
 import { getModeColor, getStatusColor, getValueColor } from "@/lib/assetUtils";
