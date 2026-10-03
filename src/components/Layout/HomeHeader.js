@@ -1,6 +1,6 @@
 "use client";
 
-import { Moon, Sun, Settings, ChartColumnBig, ShipWheelIcon } from "lucide-react";
+import { Moon, Sun, ChartColumnBig, ShipWheelIcon } from "lucide-react";
 import LogoutMenu from "@/components/UI/LogoutMenu";
 
 // HomeHeader — fixed top-right controls bar.

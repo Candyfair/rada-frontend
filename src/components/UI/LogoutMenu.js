@@ -1,4 +1,4 @@
-export default function LogoutMenu({ onClose, onLogout, opacity = 1 }) {
+export default function LogoutMenu({ onLogout, opacity = 1 }) {
   return (
     <div style={{ ...styles.menu, backgroundColor: `hsla(42, 22%, 91%, ${opacity})` }}>
       <button style={styles.item} onClick={onLogout}>

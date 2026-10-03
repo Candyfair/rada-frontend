@@ -148,7 +148,6 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
   useEffect(() => {
     if (!assets.length || !simulationRef.current) return;
 
-    const svg = d3.select(svgRef.current);
     const width = svgRef.current.clientWidth;
     const height = svgRef.current.clientHeight;
     const radiusScale = buildRadiusScale(assets, metric);
