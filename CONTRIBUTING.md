@@ -2,6 +2,8 @@
 
 Thanks for your interest in RADA! Bug reports, ideas and pull requests are all welcome.
 
+Everyone taking part in the project follows the [OpenFROG Code of Conduct](https://github.com/OpenFoundationRenewableOperationGrids/.github/blob/main/CODE_OF_CONDUCT.md).
+
 ## Before you start
 
 - **Bugs and ideas:** open an [issue](../../issues/new/choose) first, so we can agree on the approach before you write code.
