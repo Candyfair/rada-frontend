@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import type { CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { useAssets } from "@/hooks/useAssets";
 import { useAssetDetail } from "@/hooks/useAssetDetail";
@@ -10,11 +11,13 @@ import { useFleetSummary } from "@/hooks/useFleetSummary";
 import BubbleChart from "@/components/BubbleChart/BubbleChart";
 import Toggle from "@/components/UI/Toggle";
 import FilterModal from "@/components/UI/FilterModal";
+import type { AssetFilter } from "@/components/UI/FilterModal";
 import HomeHeader from "@/components/Layout/HomeHeader";
 import DetailPanel from "@/components/Layout/DetailPanel";
 import TotalPowerBadge from "@/components/Layout/TotalPowerBadge";
 import AssetDetailPage from "@/components/AssetDetail/AssetDetailPage";
 import StatsModal from "@/components/Graphs/StatsModal";
+import type { Asset, BubbleMetric } from "@/types/api";
 
 export default function Home() {
   const { assets, loading, error } = useAssets();
@@ -24,10 +27,10 @@ export default function Home() {
 
   const router = useRouter();
 
-  const [metric, setMetric] = useState("power_mw");
-  const [selectedAsset, setSelectedAsset] = useState(null);
+  const [metric, setMetric] = useState<BubbleMetric>("power_mw");
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [isThemeSpinning, setIsThemeSpinning] = useState(false);
-  const [activeFilters, setActiveFilters] = useState(new Set(["all"]));
+  const [activeFilters, setActiveFilters] = useState<ReadonlySet<AssetFilter>>(new Set(["all"]));
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isLogoutMenuOpen, setIsLogoutMenuOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -42,7 +45,7 @@ export default function Home() {
   }, [assets, activeFilters]);
 
   const showToggle = activeFilters.size === 1 && activeFilters.has("battery");
-  const effectiveMetric = showToggle ? metric : "power_mw";
+  const effectiveMetric: BubbleMetric = showToggle ? metric : "power_mw";
 
   const displayedPower = useMemo(() => {
     if (!summary) return null;
@@ -77,7 +80,7 @@ export default function Home() {
   // ------------------------------------------------------------------
   // HANDLERS
   // ------------------------------------------------------------------
-  function handleBubbleSelect(asset) {
+  function handleBubbleSelect(asset: Asset) {
     setSelectedAsset(asset);
   }
 
@@ -94,7 +97,7 @@ export default function Home() {
     }, 350);
   }
 
-  function handleFilterChange(newFilters) {
+  function handleFilterChange(newFilters: Set<AssetFilter>) {
     setActiveFilters(newFilters);
     if (selectedAsset && !newFilters.has("all")) {
       const stillVisible = newFilters.has(selectedAsset.asset_type);
@@ -310,4 +313,4 @@ const styles = {
     color: "var(--color-text-muted)",
     fontSize: 15,
   },
-};
+} satisfies Record<string, CSSProperties>;

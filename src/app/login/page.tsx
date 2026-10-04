@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -257,4 +258,4 @@ const styles = {
     color: "var(--color-text-primary)",
     marginTop: 4,
   },
-};
+} satisfies Record<string, CSSProperties>;
