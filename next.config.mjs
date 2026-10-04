@@ -1,11 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Allow HMR from a physical device on the same Wi-Fi network (dev only).
-  // In production (Vercel), NODE_ENV is forced to "production" by the platform
-  // so this block is never included in the deployed build.
-  ...(process.env.NODE_ENV === "development" && {
-    allowedDevOrigins: ["192.168.1.34"],
-  }),
+  // Allow HMR from a phone on the same Wi-Fi network (dev only), e.g.
+  // ALLOWED_DEV_ORIGINS=192.168.1.34 in .env.local. Vercel builds run with
+  // NODE_ENV=production, so this block never reaches the deployed app.
+  ...(process.env.NODE_ENV === "development" &&
+    process.env.ALLOWED_DEV_ORIGINS && {
+      allowedDevOrigins: process.env.ALLOWED_DEV_ORIGINS.split(",").map((origin) => origin.trim()),
+    }),
 };
 
 export default nextConfig;
