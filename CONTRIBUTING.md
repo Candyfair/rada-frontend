@@ -41,9 +41,11 @@ feat(bubbles): add an opt-in accessibility mode
 
 Keep each commit focused on one change.
 
+Pull requests are **squash-merged**: the pull request title becomes the commit on `develop`, so CI checks that it follows the same format.
+
 ## Checks
 
-CI runs these on every pull request, and all of them must pass:
+CI runs these on every pull request, and all of them must pass before merging. A maintainer also has to approve the pull request.
 
 ```bash
 npm run lint        # ESLint + Prettier, no warnings allowed
