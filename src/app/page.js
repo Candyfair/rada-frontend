@@ -29,7 +29,6 @@ export default function Home() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isLogoutMenuOpen, setIsLogoutMenuOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [isDetailLogoutOpen, setIsDetailLogoutOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
 
   // ------------------------------------------------------------------
@@ -113,14 +112,6 @@ export default function Home() {
 
   function handleCloseDetail() {
     setIsDetailOpen(false);
-    setIsDetailLogoutOpen(false);
-  }
-
-  function handleDetailLogout() {
-    setIsDetailOpen(false);
-    setIsDetailLogoutOpen(false);
-    setSelectedAsset(null);
-    router.push("/login");
   }
 
   function handleHomeLogout() {
@@ -252,9 +243,6 @@ export default function Home() {
             loading={detailLoading}
             error={detailError}
             onBack={handleCloseDetail}
-            onLogout={handleDetailLogout}
-            isLogoutMenuOpen={isDetailLogoutOpen}
-            onToggleLogout={() => setIsDetailLogoutOpen((prev) => !prev)}
           />
         </div>
 

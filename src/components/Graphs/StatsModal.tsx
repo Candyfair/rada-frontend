@@ -1,24 +1,27 @@
 import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
+import type { Asset } from "@/types/api";
 import AssetComparisonChart from "./AssetComparisonChart";
 import styles from "./StatsModal.module.css";
 
-export default function StatsModal({ assetId, assets, isOpen, onClose }) {
-  const scrollRef = useRef(null);
-  // Increment this key each time the modal opens to fully remount the chart
-  // and reset all its internal state — selected assets, dates, loaded data
-  const mountKeyRef = useRef(0);
+interface StatsModalProps {
+  /** Asset pre-selected in the chart, if any */
+  assetId: number | null;
+  assets: Asset[];
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function StatsModal({ assetId, assets, isOpen, onClose }: StatsModalProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      mountKeyRef.current += 1;
-      if (scrollRef.current) scrollRef.current.scrollTop = 0;
-    }
+    if (isOpen && scrollRef.current) scrollRef.current.scrollTop = 0;
   }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
-    const handleKey = (e) => {
+    const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handleKey);
@@ -33,6 +36,7 @@ export default function StatsModal({ assetId, assets, isOpen, onClose }) {
         role="dialog"
         aria-modal="true"
         aria-label="Fleet statistics"
+        inert={!isOpen}
       >
         <div className={styles.handle} />
         <div className={styles.header}>
@@ -43,12 +47,12 @@ export default function StatsModal({ assetId, assets, isOpen, onClose }) {
         </div>
         <div className={styles.scrollContent} ref={scrollRef}>
           <div className={styles.section}>
-            {/* key forces a full remount each time the modal opens,
-                which resets all state inside AssetComparisonChart */}
+            {/* The chart is mounted only while the modal is open, so each
+                opening starts from a clean state: selected assets, dates,
+                loaded data. The key remounts it if the asset changes. */}
             {isOpen && (
               <AssetComparisonChart
-                /* eslint-disable-next-line react-hooks/refs -- TODO(ts-migration): refactor, see migration plan phase 3 */
-                key={mountKeyRef.current}
+                key={assetId ?? "none"}
                 initialAssetId={assetId}
                 assets={assets}
               />

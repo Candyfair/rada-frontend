@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import type { CSSProperties } from "react";
 import { ArrowRight, X, ChartColumnBig } from "lucide-react";
 import { getModeColor, getStatusColor, getValueColor } from "@/lib/assetUtils";
+import type { Asset } from "@/types/api";
 
 // DetailPanel — slide-up panel showing summary data for the selected asset.
 //
@@ -15,13 +17,21 @@ import { getModeColor, getStatusColor, getValueColor } from "@/lib/assetUtils";
 // The panel is never unmounted — visibility + transform handle
 // show/hide so the slide animation always plays correctly.
 
+interface DetailPanelProps {
+  selectedAsset: Asset | null;
+  isDetailOpen: boolean;
+  onDismiss: () => void;
+  onOpenDetail: () => void;
+  onOpenStats: () => void;
+}
+
 export default function DetailPanel({
   selectedAsset,
   isDetailOpen,
   onDismiss,
   onOpenDetail,
   onOpenStats,
-}) {
+}: DetailPanelProps) {
   // Keep the last selected asset in memory so the panel content
   // stays visible during the closing animation.
   const [lastAsset, setLastAsset] = useState(selectedAsset);
@@ -147,7 +157,13 @@ export default function DetailPanel({
 // -------------------------------------------------------------------
 // DETAIL ROW
 // -------------------------------------------------------------------
-function DetailRow({ label, value, valueColor }) {
+interface DetailRowProps {
+  label: string;
+  value: string;
+  valueColor?: string;
+}
+
+function DetailRow({ label, value, valueColor }: DetailRowProps) {
   return (
     <div style={styles.detailRow}>
       <span style={styles.detailLabel}>{label}</span>
@@ -289,4 +305,4 @@ const styles = {
     fontWeight: "600",
     color: "var(--color-panel-value)",
   },
-};
+} satisfies Record<string, CSSProperties>;

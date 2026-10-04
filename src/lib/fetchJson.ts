@@ -1,8 +1,16 @@
+// Thrown on a non-2xx response. The message stays short ("HTTP 404") so
+// hooks can show it as is, and `status` lets callers handle specific codes.
+export class HttpError extends Error {
+  constructor(readonly status: number) {
+    super(`HTTP ${status}`);
+    this.name = "HttpError";
+  }
+}
+
 // Fetches a JSON payload from one of our /api routes.
-// Throws "HTTP <status>" on a non-2xx response so hooks can show a short error.
 export async function fetchJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   const res = await fetch(url, { signal });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) throw new HttpError(res.status);
   return (await res.json()) as T;
 }
 

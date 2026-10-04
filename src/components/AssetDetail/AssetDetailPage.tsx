@@ -1,14 +1,16 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
-import { BatteryFull, Zap, Thermometer, Unplug } from "lucide-react";
+import type { CSSProperties, ReactNode } from "react";
+import { ArrowLeft, BatteryFull, Zap, Thermometer, Unplug } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { getModeColor, getStatusColor, getValueColor } from "@/lib/assetUtils";
+import type { Asset, AssetSnapshot } from "@/types/api";
 
 // -------------------------------------------------------------------
 // SUB-COMPONENTS
 // -------------------------------------------------------------------
 
-function IconBlock({ icon: Icon }) {
+function IconBlock({ icon: Icon }: { icon: LucideIcon }) {
   return (
     <div style={styles.iconBlock}>
       <Icon size={20} color="var(--color-detail-text)" />
@@ -16,7 +18,13 @@ function IconBlock({ icon: Icon }) {
   );
 }
 
-function DataRow({ label, value, valueColor }) {
+interface DataRowProps {
+  label: string;
+  value: string | null | undefined;
+  valueColor?: string;
+}
+
+function DataRow({ label, value, valueColor }: DataRowProps) {
   return (
     <div style={styles.dataRow}>
       <span style={styles.dataLabel}>{label}</span>
@@ -27,7 +35,7 @@ function DataRow({ label, value, valueColor }) {
   );
 }
 
-function DataBlock({ icon, children }) {
+function DataBlock({ icon, children }: { icon: LucideIcon; children: ReactNode }) {
   return (
     <div style={styles.dataBlock}>
       <IconBlock icon={icon} />
@@ -39,7 +47,22 @@ function DataBlock({ icon, children }) {
 // -------------------------------------------------------------------
 // MAIN COMPONENT
 // -------------------------------------------------------------------
-export default function AssetDetailPage({ asset, detail, loading, error, onBack }) {
+interface AssetDetailPageProps {
+  asset: Asset | null;
+  /** Latest snapshot of the asset, from useAssetDetail */
+  detail: AssetSnapshot | null;
+  loading: boolean;
+  error: string | null;
+  onBack: () => void;
+}
+
+export default function AssetDetailPage({
+  asset,
+  detail,
+  loading,
+  error,
+  onBack,
+}: AssetDetailPageProps) {
   const record = detail?.record ?? null;
   const isBattery = asset?.asset_type === "battery";
 
@@ -84,7 +107,7 @@ export default function AssetDetailPage({ asset, detail, loading, error, onBack 
           {/* ---- CAPACITY BLOCK — batteries only ---- */}
           {isBattery && (
             <DataBlock icon={BatteryFull}>
-              <DataRow label="Capacity" value={record ? `${detail.max_capacity_mwh} MWh` : "—"} />
+              <DataRow label="Capacity" value={detail ? `${detail.max_capacity_mwh} MWh` : "—"} />
               <DataRow
                 label="Current capacity"
                 value={record ? `${record.energy_mwh} MWh` : "—"}
@@ -126,7 +149,7 @@ export default function AssetDetailPage({ asset, detail, loading, error, onBack 
           <DataBlock icon={Thermometer}>
             <DataRow
               label="Temperature"
-              value={record ? `${record.temperature_celsius} C°` : "—"}
+              value={record ? `${record.temperature_celsius} °C` : "—"}
               valueColor={record ? getValueColor(record.temperature_celsius, dc) : undefined}
             />
           </DataBlock>
@@ -306,4 +329,4 @@ const styles = {
     fontSize: 13,
     color: "var(--color-detail-text)",
   },
-};
+} satisfies Record<string, CSSProperties>;
