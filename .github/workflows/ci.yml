@@ -70,8 +70,8 @@ jobs:
 
       - run: npm ci
 
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+      - name: Install browsers
+        run: npx playwright install --with-deps chromium webkit
 
       # Builds the app and starts it against the mock backend
       # (e2e/mock-backend.mts): no secret, no real backend needed

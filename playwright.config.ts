@@ -24,8 +24,11 @@ export default defineConfig({
     trace: "on-first-retry",
   },
 
-  // The app is mobile-first: run everything on a phone and on a desktop
+  // The app is mobile-first and mostly used on iPhone (on-the-go demos):
+  // run everything on Safari's engine on an iPhone, an Android phone and
+  // a desktop
   projects: [
+    { name: "iphone", use: { ...devices["iPhone 15"] } },
     { name: "mobile", use: { ...devices["Pixel 7"] } },
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
   ],

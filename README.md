@@ -84,8 +84,8 @@ API_KEY=your-api-key
 # Unit and component tests (Vitest)
 npm test
 
-# End-to-end tests (Playwright), on a phone and a desktop viewport
-npx playwright install chromium   # once
+# End-to-end tests (Playwright): iPhone (WebKit), Android and desktop (Chromium)
+npx playwright install chromium webkit   # once
 npm run test:e2e
 ```
 
