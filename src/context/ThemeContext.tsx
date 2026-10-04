@@ -1,4 +1,4 @@
-// src/context/ThemeContext.js
+// src/context/ThemeContext.tsx
 // -------------------------------------------------------------------
 // Provides theme state ("light" | "dark") and a toggle function
 // to the entire component tree.
@@ -7,42 +7,80 @@
 // so CSS custom properties in tokens.css can target it with
 // [data-theme="dark"] without any JavaScript-level style injection.
 //
-// localStorage is used to persist the user's preference across sessions.
+// localStorage holds the user's preference across sessions and is read
+// through useSyncExternalStore: the server and the hydration pass render
+// "light", then React switches to the saved value without a setState in
+// an effect. Other tabs stay in sync through the "storage" event.
 // -------------------------------------------------------------------
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useSyncExternalStore } from "react";
+import type { ReactNode } from "react";
 
-const ThemeContext = createContext(null);
+export type Theme = "light" | "dark";
 
-export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState("light");
+interface ThemeContextValue {
+  theme: Theme;
+  toggleTheme: () => void;
+}
 
-  // On mount — restore the saved preference if it exists
-  useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    if (saved === "dark" || saved === "light") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- TODO(ts-migration): refactor, see migration plan phase 3
-      setTheme(saved);
-      document.documentElement.setAttribute("data-theme", saved);
-    }
-  }, []);
+const STORAGE_KEY = "theme";
+const DEFAULT_THEME: Theme = "light";
 
-  // Whenever theme changes — update the HTML attribute and persist
+const ThemeContext = createContext<ThemeContextValue | null>(null);
+
+// Same-tab subscribers; the "storage" event only fires in other tabs
+const listeners = new Set<() => void>();
+
+function subscribe(onChange: () => void) {
+  listeners.add(onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    listeners.delete(onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
+
+// localStorage can throw (blocked storage, some private modes):
+// the toggle then still works for the current page
+let fallbackTheme: Theme = DEFAULT_THEME;
+
+function readTheme(): Theme {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved === "dark" || saved === "light" ? saved : DEFAULT_THEME;
+  } catch {
+    return fallbackTheme;
+  }
+}
+
+function writeTheme(theme: Theme) {
+  fallbackTheme = theme;
+  try {
+    localStorage.setItem(STORAGE_KEY, theme);
+  } catch {
+    // Preference just won't persist
+  }
+  listeners.forEach((listener) => listener());
+}
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const theme = useSyncExternalStore(subscribe, readTheme, () => DEFAULT_THEME);
+
+  // Whenever theme changes — update the HTML attribute
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("theme", theme);
   }, [theme]);
 
-  function toggleTheme() {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
-  }
+  const toggleTheme = useCallback(() => {
+    writeTheme(readTheme() === "light" ? "dark" : "light");
+  }, []);
 
   return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>;
 }
 
 // Custom hook — shorthand for consuming the context
-export function useTheme() {
+export function useTheme(): ThemeContextValue {
   const ctx = useContext(ThemeContext);
   if (!ctx) throw new Error("useTheme must be used inside ThemeProvider");
   return ctx;
