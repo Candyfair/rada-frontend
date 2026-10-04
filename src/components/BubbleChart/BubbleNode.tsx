@@ -3,13 +3,16 @@
 // Renders only the circle for a single asset bubble.
 // Labels are rendered as HTML overlays in BubbleChart to avoid
 // SVG text pixel-snapping on Safari/WebKit, which causes vertical jitter.
-//
-// Props:
-//   radius     : pixel radius computed by BubbleChart's radius scale
-//   color      : fill colour string from getBubbleColor()
-//   isSelected : whether this bubble is currently selected
 // -------------------------------------------------------------------
-export default function BubbleNode({ radius, color, isSelected }) {
+interface BubbleNodeProps {
+  /** Pixel radius computed by BubbleChart's radius scale */
+  radius: number;
+  /** Fill colour from getBubbleColor() */
+  color: string;
+  isSelected: boolean;
+}
+
+export default function BubbleNode({ radius, color, isSelected }: BubbleNodeProps) {
   return (
     <circle
       r={radius}

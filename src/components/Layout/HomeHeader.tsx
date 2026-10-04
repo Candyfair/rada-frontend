@@ -2,7 +2,7 @@
 
 import { Moon, Sun, ChartColumnBig, ShipWheelIcon } from "lucide-react";
 import type { CSSProperties } from "react";
-import LogoutMenu from "@/components/UI/LogoutMenu";
+import SettingsMenu from "@/components/UI/SettingsMenu";
 import type { Theme } from "@/context/ThemeContext";
 
 // HomeHeader — fixed top-right controls bar.
@@ -10,11 +10,11 @@ import type { Theme } from "@/context/ThemeContext";
 // Contains (left to right) :
 //   - Dark mode toggle
 //   - Chart button (placeholder — stats modal to be built later)
-//   - Settings button — opens filter modal + logout menu simultaneously
+//   - Settings button — opens filter modal + settings menu simultaneously
 //
-// The settings button border and logout menu opacity adapt to context :
-//   - On home : border visible, logout menu at 50% opacity
-//   - On detail page : border visible, logout menu at 100% opacity
+// The settings button border and settings menu opacity adapt to context :
+//   - On home : border visible, settings menu at 50% opacity
+//   - On detail page : border visible, settings menu at 100% opacity
 
 interface HomeHeaderProps {
   theme: Theme;
@@ -23,6 +23,8 @@ interface HomeHeaderProps {
   onChartPress: () => void;
   onSettingsPress: () => void;
   isLogoutMenuOpen: boolean;
+  isAccessibilityMode: boolean;
+  onAccessibilityModeChange: (enabled: boolean) => void;
   onLogout: () => void;
   isDetailOpen: boolean;
 }
@@ -34,10 +36,12 @@ export default function HomeHeader({
   onChartPress,
   onSettingsPress,
   isLogoutMenuOpen,
+  isAccessibilityMode,
+  onAccessibilityModeChange,
   onLogout,
   isDetailOpen,
 }: HomeHeaderProps) {
-  const logoutOpacity = isDetailOpen ? 1 : 0.5;
+  const menuOpacity = isDetailOpen ? 1 : 0.5;
 
   return (
     <div style={styles.header}>
@@ -62,7 +66,7 @@ export default function HomeHeader({
         <ChartColumnBig size={22} color="var(--color-icon)" />
       </button>
 
-      {/* Settings button — wrapped in relative div to anchor LogoutMenu */}
+      {/* Settings button — wrapped in relative div to anchor SettingsMenu */}
       <div style={{ position: "relative" }}>
         <button
           style={styles.settingsButton}
@@ -73,7 +77,14 @@ export default function HomeHeader({
           <ShipWheelIcon size={22} color="var(--color-icon)" />
         </button>
 
-        {isLogoutMenuOpen && <LogoutMenu opacity={logoutOpacity} onLogout={onLogout} />}
+        {isLogoutMenuOpen && (
+          <SettingsMenu
+            opacity={menuOpacity}
+            isAccessibilityMode={isAccessibilityMode}
+            onAccessibilityModeChange={onAccessibilityModeChange}
+            onLogout={onLogout}
+          />
+        )}
       </div>
     </div>
   );
