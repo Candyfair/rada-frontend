@@ -7,15 +7,15 @@
 // so CSS custom properties in tokens.css can target it with
 // [data-theme="dark"] without any JavaScript-level style injection.
 //
-// localStorage holds the user's preference across sessions and is read
-// through useSyncExternalStore: the server and the hydration pass render
-// "light", then React switches to the saved value without a setState in
-// an effect. Other tabs stay in sync through the "storage" event.
+// localStorage holds the user's preference across sessions
+// (see lib/storedPreference): the server and the hydration pass
+// render "light", then React switches to the saved value.
 // -------------------------------------------------------------------
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
+import { createStoredPreference } from "@/lib/storedPreference";
 
 export type Theme = "light" | "dark";
 
@@ -24,48 +24,16 @@ interface ThemeContextValue {
   toggleTheme: () => void;
 }
 
-const STORAGE_KEY = "theme";
-const DEFAULT_THEME: Theme = "light";
-
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-// Same-tab subscribers; the "storage" event only fires in other tabs
-const listeners = new Set<() => void>();
-
-function subscribe(onChange: () => void) {
-  listeners.add(onChange);
-  window.addEventListener("storage", onChange);
-  return () => {
-    listeners.delete(onChange);
-    window.removeEventListener("storage", onChange);
-  };
-}
-
-// localStorage can throw (blocked storage, some private modes):
-// the toggle then still works for the current page
-let fallbackTheme: Theme = DEFAULT_THEME;
-
-function readTheme(): Theme {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved === "dark" || saved === "light" ? saved : DEFAULT_THEME;
-  } catch {
-    return fallbackTheme;
-  }
-}
-
-function writeTheme(theme: Theme) {
-  fallbackTheme = theme;
-  try {
-    localStorage.setItem(STORAGE_KEY, theme);
-  } catch {
-    // Preference just won't persist
-  }
-  listeners.forEach((listener) => listener());
-}
+const themePreference = createStoredPreference<Theme>("theme", ["light", "dark"], "light");
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const theme = useSyncExternalStore(subscribe, readTheme, () => DEFAULT_THEME);
+  const theme = useSyncExternalStore(
+    themePreference.subscribe,
+    themePreference.read,
+    () => themePreference.defaultValue
+  );
 
   // Whenever theme changes — update the HTML attribute
   useEffect(() => {
@@ -73,7 +41,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [theme]);
 
   const toggleTheme = useCallback(() => {
-    writeTheme(readTheme() === "light" ? "dark" : "light");
+    themePreference.write(themePreference.read() === "light" ? "dark" : "light");
   }, []);
 
   return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>;
