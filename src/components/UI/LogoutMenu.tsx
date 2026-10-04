@@ -1,4 +1,13 @@
-export default function LogoutMenu({ onLogout, opacity = 1 }) {
+import type { CSSProperties } from "react";
+
+// The parent owns the open state and closes the menu itself
+// (settings button, filter modal close, logout).
+interface LogoutMenuProps {
+  onLogout: () => void;
+  opacity?: number;
+}
+
+export default function LogoutMenu({ onLogout, opacity = 1 }: LogoutMenuProps) {
   return (
     <div style={{ ...styles.menu, backgroundColor: `hsla(42, 22%, 91%, ${opacity})` }}>
       <button style={styles.item} onClick={onLogout}>
@@ -31,4 +40,4 @@ const styles = {
     color: "var(--color-text-primary)",
     cursor: "pointer",
   },
-};
+} satisfies Record<string, CSSProperties>;

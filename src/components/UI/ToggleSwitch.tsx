@@ -2,13 +2,29 @@
 // Generic on/off toggle switch used in the filter modal.
 // Purely presentational — state is managed by the parent.
 //
+// Rendered as a <button role="switch"> so it is focusable, works with
+// Enter/Space and announces its state to assistive tech.
+//
 // Props:
 //   enabled  : boolean — current state
 //   onChange : callback fired with the new boolean value
+//   label    : accessible name, e.g. "Battery"
 // -------------------------------------------------------------------
-export default function ToggleSwitch({ enabled, onChange }) {
+import type { CSSProperties } from "react";
+
+interface ToggleSwitchProps {
+  enabled: boolean;
+  onChange: (enabled: boolean) => void;
+  label: string;
+}
+
+export default function ToggleSwitch({ enabled, onChange, label }: ToggleSwitchProps) {
   return (
-    <div
+    <button
+      type="button"
+      role="switch"
+      aria-checked={enabled}
+      aria-label={label}
       onClick={() => onChange(!enabled)}
       style={{
         ...styles.track,
@@ -25,12 +41,15 @@ export default function ToggleSwitch({ enabled, onChange }) {
           transform: enabled ? "translateX(20px)" : "translateX(2px)",
         }}
       />
-    </div>
+    </button>
   );
 }
 
 const styles = {
   track: {
+    // Reset native button styles
+    border: "none",
+    padding: 0,
     width: 44,
     height: 26,
     borderRadius: 13,
@@ -49,4 +68,4 @@ const styles = {
     borderRadius: "50%",
     transition: "transform 0.2s ease, background-color 0.2s ease",
   },
-};
+} satisfies Record<string, CSSProperties>;

@@ -15,20 +15,30 @@
 //   onClose       : callback fired when the modal should close
 // -------------------------------------------------------------------
 import { CircleCheckBig } from "lucide-react";
+import type { CSSProperties } from "react";
+import type { AssetType } from "@/types/api";
 import ToggleSwitch from "./ToggleSwitch";
 
-const ASSET_TYPES = [
+export type AssetFilter = AssetType | "all";
+
+const ASSET_TYPES: { key: AssetType; label: string }[] = [
   { key: "battery", label: "Battery" },
   { key: "solar", label: "Solar PV" },
   { key: "wind", label: "Wind" },
 ];
 
-export default function FilterModal({ activeFilters, onChange, onClose }) {
+interface FilterModalProps {
+  activeFilters: ReadonlySet<AssetFilter>;
+  onChange: (filters: Set<AssetFilter>) => void;
+  onClose: () => void;
+}
+
+export default function FilterModal({ activeFilters, onChange, onClose }: FilterModalProps) {
   // ------------------------------------------------------------------
   // HANDLERS
   // ------------------------------------------------------------------
 
-  function handleTypeToggle(key) {
+  function handleTypeToggle(key: AssetType) {
     const next = new Set(activeFilters);
 
     // If "all" is currently active, switch to this type only
@@ -57,7 +67,7 @@ export default function FilterModal({ activeFilters, onChange, onClose }) {
   function handleViewAllToggle() {
     // "View all" is already active — do nothing (can't deselect everything)
     if (activeFilters.has("all")) return;
-    onChange(new Set(["all"]));
+    onChange(new Set<AssetFilter>(["all"]));
   }
 
   // ------------------------------------------------------------------
@@ -67,12 +77,22 @@ export default function FilterModal({ activeFilters, onChange, onClose }) {
     // Backdrop — full screen, blurs the map behind, closes on tap
     <div style={styles.backdrop} onClick={onClose}>
       {/* Modal card — stop propagation so tapping inside doesn't close */}
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Filter assets"
+        style={styles.modal}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Filter rows — individual types first */}
         {ASSET_TYPES.map(({ key, label }) => (
           <div key={key} style={styles.row}>
             <span style={styles.label}>{label}</span>
-            <ToggleSwitch enabled={activeFilters.has(key)} onChange={() => handleTypeToggle(key)} />
+            <ToggleSwitch
+              label={label}
+              enabled={activeFilters.has(key)}
+              onChange={() => handleTypeToggle(key)}
+            />
           </div>
         ))}
 
@@ -82,12 +102,16 @@ export default function FilterModal({ activeFilters, onChange, onClose }) {
         {/* View all — last row, mutually exclusive */}
         <div style={styles.row}>
           <span style={styles.labelAll}>View all</span>
-          <ToggleSwitch enabled={activeFilters.has("all")} onChange={handleViewAllToggle} />
+          <ToggleSwitch
+            label="View all"
+            enabled={activeFilters.has("all")}
+            onChange={handleViewAllToggle}
+          />
         </div>
 
         {/* Confirm button — centred at the bottom */}
         <div style={styles.confirmWrapper}>
-          <button style={styles.confirmButton} onClick={onClose}>
+          <button style={styles.confirmButton} onClick={onClose} aria-label="Apply filters">
             <CircleCheckBig size={32} color="var(--color-modal-border)" />
           </button>
         </div>
@@ -159,4 +183,4 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
   },
-};
+} satisfies Record<string, CSSProperties>;
