@@ -11,12 +11,14 @@ function renderHeader(props: Partial<Props> = {}) {
     onChartPress: vi.fn(),
     onSettingsPress: vi.fn(),
     onLogout: vi.fn(),
+    onAccessibilityModeChange: vi.fn(),
   };
   render(
     <HomeHeader
       theme="light"
       isThemeSpinning={false}
       isLogoutMenuOpen={false}
+      isAccessibilityMode={false}
       isDetailOpen={false}
       {...handlers}
       {...props}
@@ -48,7 +50,7 @@ describe("HomeHeader", () => {
     expect(button.querySelector(`svg.${icon}`)).not.toBeNull();
   });
 
-  it("hides the logout menu when closed", () => {
+  it("hides the settings menu when closed", () => {
     renderHeader();
 
     expect(screen.queryByRole("button", { name: "Logout" })).not.toBeInTheDocument();
@@ -58,7 +60,7 @@ describe("HomeHeader", () => {
     );
   });
 
-  it("shows the logout menu when open and forwards onLogout", async () => {
+  it("shows the settings menu when open and forwards onLogout", async () => {
     const { onLogout } = renderHeader({ isLogoutMenuOpen: true });
 
     expect(screen.getByRole("button", { name: "Open settings" })).toHaveAttribute(
@@ -73,11 +75,24 @@ describe("HomeHeader", () => {
   it.each([
     [false, "0.5"],
     [true, "1"],
-  ])("logout menu opacity with detail open=%s is %s", (isDetailOpen, opacity) => {
+  ])("settings menu opacity with detail open=%s is %s", (isDetailOpen, opacity) => {
     renderHeader({ isLogoutMenuOpen: true, isDetailOpen });
 
     expect(screen.getByRole("button", { name: "Logout" }).parentElement).toHaveStyle({
       backgroundColor: `hsla(42, 22%, 91%, ${opacity})`,
     });
+  });
+
+  it("forwards the accessibility mode to the settings menu", async () => {
+    const { onAccessibilityModeChange } = renderHeader({
+      isLogoutMenuOpen: true,
+      isAccessibilityMode: true,
+    });
+    const toggle = screen.getByRole("switch", { name: "Accessibility" });
+
+    expect(toggle).toHaveAttribute("aria-checked", "true");
+    await userEvent.click(toggle);
+
+    expect(onAccessibilityModeChange).toHaveBeenCalledExactlyOnceWith(false);
   });
 });

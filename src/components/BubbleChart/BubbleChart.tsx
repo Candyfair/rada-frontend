@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from "react";
-import type { KeyboardEvent } from "react";
+import type { KeyboardEvent, MouseEvent } from "react";
 import * as d3 from "d3";
 import { getBubbleColor } from "@/lib/bubbleUtils";
 import type { Asset, BubbleMetric } from "@/types/api";
@@ -17,13 +17,25 @@ interface BubbleChartProps {
   metric: BubbleMetric;
   selectedId: number | null;
   onSelect: (asset: Asset) => void;
+  /**
+   * Accessibility mode: bubbles become keyboard-focusable buttons.
+   * Off, they are plain shapes, so a click shows no focus ring.
+   */
+  isAccessible?: boolean;
 }
 
-export default function BubbleChart({ assets, metric, selectedId, onSelect }: BubbleChartProps) {
+export default function BubbleChart({
+  assets,
+  metric,
+  selectedId,
+  onSelect,
+  isAccessible = false,
+}: BubbleChartProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const gRef = useRef<SVGGElement>(null);
   const labelsRef = useRef<HTMLDivElement>(null); // ref to the HTML label overlay container
   const simulationRef = useRef<d3.Simulation<BubbleDatum, undefined>>(null);
+  const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown>>(null);
   const nodesRef = useRef<BubbleDatum[]>([]);
   // Assets and metric of the current layout, to tell a data refresh
   // from a change that moves the bubbles around
@@ -116,6 +128,7 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }: Bu
       });
 
     svg.call(zoom);
+    zoomRef.current = zoom;
     svg.call(
       zoom.transform,
       d3.zoomIdentity
@@ -127,6 +140,7 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }: Bu
     return () => {
       simulation.stop();
       simulationRef.current = null;
+      zoomRef.current = null;
       svg.on(".zoom", null);
     };
   }, [updateLabelPositions]);
@@ -162,6 +176,16 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }: Bu
     setNodes(next);
   }, [assets, metric]);
 
+  // Pan the map onto a bubble reached from the keyboard, which may be
+  // off screen at the current zoom. Mouse presses never focus a bubble.
+  function handleBubbleFocus(node: BubbleDatum) {
+    if (!svgRef.current || !zoomRef.current) return;
+    d3.select(svgRef.current)
+      .transition()
+      .duration(CONFIG.FOCUS_PAN_MS)
+      .call(zoomRef.current.translateTo, node.x, node.y);
+  }
+
   function handleBubbleKeyDown(e: KeyboardEvent<SVGGElement>, node: BubbleDatum) {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -191,15 +215,22 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }: Bu
               <g
                 key={node.id}
                 className="bubble-node"
-                role="button"
-                tabIndex={0}
-                aria-label={`${node.name}, ${formatMetricLabel(node, metric)}`}
-                aria-pressed={isSelected}
                 onClick={(e) => {
                   e.stopPropagation();
                   onSelect(node);
                 }}
-                onKeyDown={(e) => handleBubbleKeyDown(e, node)}
+                {...(isAccessible && {
+                  role: "button",
+                  tabIndex: 0,
+                  "aria-label": `${node.name}, ${formatMetricLabel(node, metric)}`,
+                  "aria-pressed": isSelected,
+                  onKeyDown: (e: KeyboardEvent<SVGGElement>) => handleBubbleKeyDown(e, node),
+                  onFocus: () => handleBubbleFocus(node),
+                  // Keep the focus (and its ring) for the keyboard: a mouse
+                  // or touch press selects without focusing. Capture phase,
+                  // as d3-zoom stops the mousedown on the <svg>.
+                  onMouseDownCapture: (e: MouseEvent<SVGGElement>) => e.preventDefault(),
+                })}
                 style={{ cursor: "pointer", willChange: "transform" }}
               >
                 <BubbleNode radius={node.r} color={getBubbleColor(node)} isSelected={isSelected} />
@@ -212,15 +243,16 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }: Bu
       {/* ---- LAYER 2 : HTML label overlay ---- */}
       {/* position: absolute + inset: 0 makes this layer cover the SVG exactly. */}
       {/* pointerEvents: none lets taps fall through to the SVG circles below.  */}
-      {/* Hidden from screen readers: each bubble already carries its label.   */}
+      {/* In accessibility mode each bubble carries its own label, so this   */}
+      {/* overlay is hidden from screen readers to avoid reading it twice.    */}
       <div
         ref={labelsRef}
-        aria-hidden="true"
+        aria-hidden={isAccessible || undefined}
         style={{
           position: "absolute",
           inset: 0,
           pointerEvents: "none",
-          overflow: "hidden",
+          overflow: "clip",
         }}
       >
         {nodes.map((node) => {

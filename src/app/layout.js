@@ -1,5 +1,6 @@
 import "@/styles/tokens.css";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { AccessibilityProvider } from "@/context/AccessibilityContext";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
@@ -25,8 +26,10 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
         <ThemeProvider>
-          {children}
-          <Analytics />
+          <AccessibilityProvider>
+            {children}
+            <Analytics />
+          </AccessibilityProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAssets } from "@/hooks/useAssets";
 import { useAssetDetail } from "@/hooks/useAssetDetail";
 import { useTheme } from "@/context/ThemeContext";
+import { useAccessibility } from "@/context/AccessibilityContext";
 import { useFleetSummary } from "@/hooks/useFleetSummary";
 import BubbleChart from "@/components/BubbleChart/BubbleChart";
 import Toggle from "@/components/UI/Toggle";
@@ -18,6 +19,7 @@ import StatsModal from "@/components/Graphs/StatsModal";
 export default function Home() {
   const { assets, loading, error } = useAssets();
   const { theme, toggleTheme } = useTheme();
+  const { isAccessibilityMode, setAccessibilityMode } = useAccessibility();
   const { summary } = useFleetSummary();
 
   const router = useRouter();
@@ -159,6 +161,7 @@ export default function Home() {
             metric={effectiveMetric}
             selectedId={selectedAsset?.id ?? null}
             onSelect={handleBubbleSelect}
+            isAccessible={isAccessibilityMode}
           />
         </div>
 
@@ -186,6 +189,8 @@ export default function Home() {
           onChartPress={() => setIsStatsOpen(true)}
           onSettingsPress={handleSettingsPress}
           isLogoutMenuOpen={isLogoutMenuOpen}
+          isAccessibilityMode={isAccessibilityMode}
+          onAccessibilityModeChange={setAccessibilityMode}
           onLogout={handleHomeLogout}
           isDetailOpen={isDetailOpen}
         />
@@ -266,7 +271,9 @@ const styles = {
     position: "relative",
     width: "100%",
     height: "100dvh",
-    overflow: "hidden",
+    // clip, not hidden: a hidden overflow can still be scrolled, and the
+    // browser scrolls it to show a focused bubble, shifting the whole map
+    overflow: "clip",
   },
 
   mapWrapper: {

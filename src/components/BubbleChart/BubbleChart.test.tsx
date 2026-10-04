@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { assets } from "@/__fixtures__";
@@ -22,12 +22,25 @@ interface Props {
   shown?: Asset[];
   metric?: BubbleMetric;
   selectedId?: number | null;
+  isAccessible?: boolean;
 }
 
-function renderChart({ shown = assets, metric = "power_mw", selectedId = null }: Props = {}) {
+// Accessibility mode on by default: bubbles are then found by role
+function renderChart({
+  shown = assets,
+  metric = "power_mw",
+  selectedId = null,
+  isAccessible = true,
+}: Props = {}) {
   const onSelect = vi.fn();
   const view = render(
-    <BubbleChart assets={shown} metric={metric} selectedId={selectedId} onSelect={onSelect} />
+    <BubbleChart
+      assets={shown}
+      metric={metric}
+      selectedId={selectedId}
+      onSelect={onSelect}
+      isAccessible={isAccessible}
+    />
   );
   const rerender = (next: Props) =>
     view.rerender(
@@ -36,9 +49,19 @@ function renderChart({ shown = assets, metric = "power_mw", selectedId = null }:
         metric={next.metric ?? metric}
         selectedId={next.selectedId ?? selectedId}
         onSelect={onSelect}
+        isAccessible={isAccessible}
       />
     );
   return { ...view, onSelect, rerender };
+}
+
+// A mouse press as a browser sends it. d3-zoom's mousedown handler reads
+// event.view, which jsdom only accepts once the event is built.
+// Returns false when a handler prevented the default (the focus).
+function pressMouse(element: Element) {
+  const event = new MouseEvent("mousedown", { bubbles: true, cancelable: true });
+  Object.defineProperty(event, "view", { value: window });
+  return fireEvent(element, event);
 }
 
 const bubble = (asset: Asset) =>
@@ -102,7 +125,13 @@ describe("BubbleChart", () => {
     const onSelect = vi.fn();
     render(
       <div onClick={onMapClick}>
-        <BubbleChart assets={assets} metric="power_mw" selectedId={null} onSelect={onSelect} />
+        <BubbleChart
+          assets={assets}
+          metric="power_mw"
+          selectedId={null}
+          onSelect={onSelect}
+          isAccessible
+        />
       </div>
     );
 
@@ -129,5 +158,63 @@ describe("BubbleChart", () => {
     expect(bubble(wind)).toHaveAttribute("aria-pressed", "true");
     expect(bubble(wind).querySelector("circle")).toHaveAttribute("stroke", "#ffffff");
     expect(bubble(stem)).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("does not focus a bubble pressed with the mouse", () => {
+    renderChart();
+
+    // Default prevented: no focus, so no focus ring
+    expect(pressMouse(bubble(wind))).toBe(false);
+  });
+
+  it("pans the map onto a bubble focused from the keyboard", async () => {
+    const { container } = renderChart();
+    const map = container.querySelector("svg > g")!;
+    const initial = map.getAttribute("transform");
+
+    act(() => bubble(wind).focus());
+
+    await waitFor(() => expect(map.getAttribute("transform")).not.toBe(initial));
+  });
+
+  it("hides the label overlay, already carried by the bubbles", () => {
+    renderChart();
+
+    expect(screen.getByText(megapack.name).closest("[aria-hidden]")).toHaveAttribute(
+      "aria-hidden",
+      "true"
+    );
+  });
+
+  describe("outside accessibility mode", () => {
+    const circles = (container: HTMLElement) => container.querySelectorAll("g.bubble-node");
+
+    it("draws plain, non-focusable bubbles", () => {
+      const { container } = renderChart({ isAccessible: false });
+
+      expect(circles(container)).toHaveLength(assets.length);
+      expect(screen.queryAllByRole("button")).toHaveLength(0);
+      for (const g of circles(container)) expect(g).not.toHaveAttribute("tabindex");
+    });
+
+    it("still selects a bubble on click", () => {
+      const { container, onSelect } = renderChart({ isAccessible: false });
+
+      fireEvent.click(circles(container)[2]!);
+
+      expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: wind.id }));
+    });
+
+    it("lets a mouse press through, as before", () => {
+      const { container } = renderChart({ isAccessible: false });
+
+      expect(pressMouse(circles(container)[0]!)).toBe(true);
+    });
+
+    it("leaves the labels readable", () => {
+      renderChart({ isAccessible: false });
+
+      expect(screen.getByText(megapack.name).closest("[aria-hidden]")).toBeNull();
+    });
   });
 });

@@ -11,6 +11,8 @@ export const CONFIG = {
   ZOOM_MIN: 0.5,
   ZOOM_MAX: 4,
   INITIAL_ZOOM: 2.5,
+  // Pan onto a bubble focused from the keyboard
+  FOCUS_PAN_MS: 300,
   FLOAT_SPEED_MIN: 0.006,
   FLOAT_SPEED_MAX: 0.022,
   FLOAT_FORCE: 0.22,
