@@ -183,6 +183,6 @@ To report a security issue, follow [SECURITY.md](SECURITY.md) — please don't o
 
 ## License
 
-Copyright 2026 the RADA contributors.
+Copyright 2026 openfrog.org
 
 Licensed under the [Apache License, Version 2.0](LICENSE).
