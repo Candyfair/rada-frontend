@@ -59,6 +59,21 @@ describe("fetchBackend", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("returns 500 when API_BASE_URL is not a valid URL", async () => {
+    // A host without its scheme, the usual copy-paste mistake
+    vi.stubEnv("API_BASE_URL", "backend.test");
+    const fetchMock = stubFetch(async () => Response.json({}));
+
+    const res = await fetchBackend("/x");
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ detail: "Server misconfigured" });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalledWith(
+      "[api] API_BASE_URL is not a valid URL: backend.test"
+    );
+  });
+
   it("returns 502 when the backend is unreachable", async () => {
     stubFetch(async () => {
       throw new TypeError("fetch failed");

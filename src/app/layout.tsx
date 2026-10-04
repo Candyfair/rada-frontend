@@ -1,4 +1,6 @@
 import "@/styles/tokens.css";
+import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AccessibilityProvider } from "@/context/AccessibilityContext";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -15,13 +17,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "RADA — Renewable Assets Data Analytics",
   description:
     "Real-time monitoring platform for renewable energy fleets. Track batteries, solar farms and wind turbines — live telemetry, historical charts, asset comparison.",
 };
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
