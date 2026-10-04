@@ -4,7 +4,10 @@
 // -------------------------------------------------------------------
 
 // Returns the correct colour token for operational_mode values
-export function getModeColor(mode, defaultColor = "var(--color-panel-value)") {
+export function getModeColor(
+  mode: string | undefined,
+  defaultColor = "var(--color-panel-value)"
+): string {
   switch (mode) {
     case "active":
       return "var(--color-status-active)";
@@ -18,7 +21,10 @@ export function getModeColor(mode, defaultColor = "var(--color-panel-value)") {
 }
 
 // Returns the correct colour token for asset_status values
-export function getStatusColor(status, defaultColor = "var(--color-panel-value)") {
+export function getStatusColor(
+  status: string | undefined,
+  defaultColor = "var(--color-panel-value)"
+): string {
   switch (status) {
     case "communicating":
       return "var(--color-status-active)";
@@ -28,6 +34,6 @@ export function getStatusColor(status, defaultColor = "var(--color-panel-value)"
 }
 
 // Negative numeric values are displayed in red
-export function getValueColor(value, defaultColor = "var(--color-panel-value)") {
+export function getValueColor(value: number, defaultColor = "var(--color-panel-value)"): string {
   return value < 0 ? "var(--color-value-negative)" : defaultColor;
 }

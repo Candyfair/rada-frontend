@@ -7,6 +7,8 @@
 //   3. asset_type                     →  type colour
 // -------------------------------------------------------------------
 
+import type { Asset, BubbleMetric } from "@/types/api";
+
 const COLORS = {
   // Asset type colours
   battery: "#7AA5AB",
@@ -19,15 +21,16 @@ const COLORS = {
 
   // Fallback if asset_type is unknown
   unknown: "#8E9AA0",
-};
+} as const;
 
 /**
  * Returns the fill colour for a bubble.
  *
- * @param {Object} asset - the full asset object from the API
- * @returns {string} - a CSS hex colour string
+ * Returns a CSS hex colour string.
  */
-export function getBubbleColor(asset) {
+export function getBubbleColor(
+  asset: Pick<Asset, "asset_type" | "operational_mode" | "asset_status">
+): string {
   // Priority 1 — operational mode overrides everything
   if (asset.operational_mode !== "active") {
     return COLORS.fault;
@@ -38,7 +41,8 @@ export function getBubbleColor(asset) {
     return COLORS.unreachable;
   }
 
-  // Priority 3 — colour by asset type
+  // Priority 3 — colour by asset type (the API may send a type this app
+  // does not know yet, hence the fallback)
   return COLORS[asset.asset_type] ?? COLORS.unknown;
 }
 
@@ -46,12 +50,11 @@ export function getBubbleColor(asset) {
  * Returns the radius to use for D3 collision and SVG rendering.
  * For power_mw, the absolute value is used so negative values
  * still produce a visible, correctly-sized bubble.
- *
- * @param {Object} asset
- * @param {string} metric - "power_mw" | "energy_mwh"
- * @returns {number}
  */
-export function getMetricValue(asset, metric) {
+export function getMetricValue(
+  asset: Partial<Record<BubbleMetric, number | null>>,
+  metric: BubbleMetric
+): number {
   const raw = asset[metric] ?? 0;
   return Math.abs(raw);
 }
