@@ -195,7 +195,6 @@ export default function Home() {
           onChartPress={() => setIsStatsOpen(true)}
           onSettingsPress={handleSettingsPress}
           isLogoutMenuOpen={isLogoutMenuOpen}
-          onLogoutMenuClose={() => setIsLogoutMenuOpen(false)}
           onLogout={handleHomeLogout}
           isDetailOpen={isDetailOpen}
         />

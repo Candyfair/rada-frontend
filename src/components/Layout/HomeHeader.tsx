@@ -1,7 +1,9 @@
 "use client";
 
 import { Moon, Sun, ChartColumnBig, ShipWheelIcon } from "lucide-react";
+import type { CSSProperties } from "react";
 import LogoutMenu from "@/components/UI/LogoutMenu";
+import type { Theme } from "@/context/ThemeContext";
 
 // HomeHeader — fixed top-right controls bar.
 //
@@ -14,6 +16,17 @@ import LogoutMenu from "@/components/UI/LogoutMenu";
 //   - On home : border visible, logout menu at 50% opacity
 //   - On detail page : border visible, logout menu at 100% opacity
 
+interface HomeHeaderProps {
+  theme: Theme;
+  isThemeSpinning: boolean;
+  onThemeToggle: () => void;
+  onChartPress: () => void;
+  onSettingsPress: () => void;
+  isLogoutMenuOpen: boolean;
+  onLogout: () => void;
+  isDetailOpen: boolean;
+}
+
 export default function HomeHeader({
   theme,
   isThemeSpinning,
@@ -21,10 +34,9 @@ export default function HomeHeader({
   onChartPress,
   onSettingsPress,
   isLogoutMenuOpen,
-  onLogoutMenuClose,
   onLogout,
   isDetailOpen,
-}) {
+}: HomeHeaderProps) {
   const logoutOpacity = isDetailOpen ? 1 : 0.5;
 
   return (
@@ -52,13 +64,16 @@ export default function HomeHeader({
 
       {/* Settings button — wrapped in relative div to anchor LogoutMenu */}
       <div style={{ position: "relative" }}>
-        <button style={styles.settingsButton} onClick={onSettingsPress} aria-label="Open settings">
+        <button
+          style={styles.settingsButton}
+          onClick={onSettingsPress}
+          aria-label="Open settings"
+          aria-expanded={isLogoutMenuOpen}
+        >
           <ShipWheelIcon size={22} color="var(--color-icon)" />
         </button>
 
-        {isLogoutMenuOpen && (
-          <LogoutMenu opacity={logoutOpacity} onClose={onLogoutMenuClose} onLogout={onLogout} />
-        )}
+        {isLogoutMenuOpen && <LogoutMenu opacity={logoutOpacity} onLogout={onLogout} />}
       </div>
     </div>
   );
@@ -100,4 +115,4 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
   },
-};
+} satisfies Record<string, CSSProperties>;

@@ -9,15 +9,25 @@
 // position, opacity and width simultaneously.
 // Phases overlap naturally because each element animates independently.
 
+import type { CSSProperties } from "react";
+
+interface TotalPowerBadgeProps {
+  value: number | null | undefined;
+  unit?: string;
+  label?: string;
+  isExpanded: boolean;
+  isDetailOpen: boolean;
+}
+
 export default function TotalPowerBadge({
   value,
   unit = "MW",
   label = "Total power",
   isExpanded,
   isDetailOpen,
-}) {
+}: TotalPowerBadgeProps) {
   // Formats the power value — shows a dash while data is loading
-  function formatPower(value) {
+  function formatPower(value: number | null | undefined) {
     if (value === null || value === undefined) return `— ${unit}`;
     return `${value} ${unit}`;
   }
@@ -88,4 +98,4 @@ const styles = {
   textLarge: {
     fontSize: 20,
   },
-};
+} satisfies Record<string, CSSProperties>;
