@@ -37,6 +37,8 @@ export function mergeRecords(
     const lookup = new Map<string, number>();
     for (const record of histories[id]?.records ?? []) {
       const bucket = bucketTimestamp(record.timestamp);
+      // A record without a usable timestamp can't be placed on the X axis
+      if (bucket === null) continue;
       lookup.set(bucket, record[metric]);
       timestamps.add(bucket);
     }

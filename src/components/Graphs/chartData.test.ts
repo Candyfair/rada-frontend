@@ -72,6 +72,18 @@ describe("mergeRecords", () => {
     ]);
   });
 
+  it("skips a record without a usable timestamp", () => {
+    // Cast: the API contract says string, but a bad record must not crash the chart
+    const broken = record(null as unknown as string, 9);
+    const histories: AssetHistories = {
+      1: history([record("2026-10-03T15:00:00Z", 1), broken, record("garbage", 9)]),
+    };
+
+    expect(mergeRecords([1], histories, "power_mw")).toEqual([
+      { timestamp: "2026-10-03T17:00:00", 1: 1 },
+    ]);
+  });
+
   it("gives an asset still without history only gaps", () => {
     const data = mergeRecords([1, 23], { 1: history(historyRange.records) }, "power_mw");
 

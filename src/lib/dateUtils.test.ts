@@ -1,13 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { historyRange as history } from "@/__fixtures__";
-import {
-  bucketTimestamp,
-  formatParisDate,
-  formatZonedToIsoString,
-  parisInputToUtcIso,
-  utcToParisDate,
-  utcToParisInput,
-} from "./dateUtils";
+import { bucketTimestamp, parisInputToUtcIso, utcToParisInput } from "./dateUtils";
 
 // The app is used in Paris, but the browser of a user (or a CI runner) may
 // run in any timezone: every conversion must give the same result everywhere.
@@ -36,6 +29,9 @@ describe.each(HOST_TIMEZONES)("with the host timezone set to %s", (tz) => {
       // Fall back: 25 October 2026 at 03:00 Paris
       ["2026-10-25T00:59:00Z", "2026-10-25T02:59"],
       ["2026-10-25T01:00:00Z", "2026-10-25T02:00"],
+      ["2026-01-15T05:00:00-05:00", "2026-01-15T11:00"], // non-UTC offset
+      // 02:30 in Paris while New York skips 02:00–02:59 (8 March 2026)
+      ["2026-03-08T01:30:00Z", "2026-03-08T02:30"],
     ])("converts %s to %s", (input, expected) => {
       expect(utcToParisInput(input)).toBe(expected);
     });
@@ -51,6 +47,8 @@ describe.each(HOST_TIMEZONES)("with the host timezone set to %s", (tz) => {
       ["2026-10-03T12:05:00Z", "2026-10-03T14:10:00"],
       ["2026-10-03T15:59:51.743283+00:00", "2026-10-03T18:00:00"], // rolls over the hour
       ["2026-12-31T22:58:00Z", "2027-01-01T00:00:00"], // rolls over the year
+      ["2026-03-08T01:30:00Z", "2026-03-08T02:30:00"], // New York DST gap
+      ["2026-03-29T01:00:00Z", "2026-03-29T03:00:00"], // Paris spring forward
     ])("rounds %s to the Paris bucket %s", (input, expected) => {
       expect(bucketTimestamp(input)).toBe(expected);
     });
@@ -61,19 +59,26 @@ describe.each(HOST_TIMEZONES)("with the host timezone set to %s", (tz) => {
     });
   });
 
-  describe("formatParisDate", () => {
-    it("formats a Paris-zoned date with the given pattern", () => {
-      const parisDate = utcToParisDate("2026-07-14T08:30:00Z");
-      expect(formatParisDate(parisDate, "dd/MM HH:mm")).toBe("14/07 10:30");
+  describe("parisInputToUtcIso", () => {
+    it.each([
+      ["2026-05-31T12:44", "2026-05-31T10:44:00.000Z"], // summer time, UTC+2
+      ["2026-01-15T11:00", "2026-01-15T10:00:00.000Z"], // winter time, UTC+1
+      ["2026-05-31T12:44:30", "2026-05-31T10:44:30.000Z"], // with seconds
+      // Spring forward: 02:00–02:59 doesn't exist, moved forward by one hour
+      ["2026-03-29T01:59", "2026-03-29T00:59:00.000Z"],
+      ["2026-03-29T02:30", "2026-03-29T01:30:00.000Z"],
+      ["2026-03-29T03:00", "2026-03-29T01:00:00.000Z"],
+      // Fall back: 02:00–02:59 happens twice, the first (summer) one is used
+      ["2026-10-25T01:59", "2026-10-24T23:59:00.000Z"],
+      ["2026-10-25T02:30", "2026-10-25T00:30:00.000Z"],
+      ["2026-10-25T03:00", "2026-10-25T02:00:00.000Z"],
+    ])("converts the Paris time %s to %s", (input, expected) => {
+      expect(parisInputToUtcIso(input)).toBe(expected);
     });
-  });
 
-  // Known bug: the datetime-local value is parsed in the *host* timezone,
-  // not in Paris time, so it is only correct on a device set to Paris.
-  // Replace with a plain `it` once fixed.
-  const itOutsideParisFails = tz === "Europe/Paris" ? it : it.fails;
-  itOutsideParisFails("parisInputToUtcIso converts a Paris time input to UTC", () => {
-    expect(parisInputToUtcIso("2026-05-31T12:44")).toBe("2026-05-31T10:44:00.000Z");
+    it("round-trips with utcToParisInput", () => {
+      expect(utcToParisInput(parisInputToUtcIso("2026-10-03T17:00"))).toBe("2026-10-03T17:00");
+    });
   });
 });
 
@@ -84,21 +89,8 @@ describe("parisInputToUtcIso", () => {
   });
 });
 
-describe("utcToParisDate", () => {
-  it("returns a Date whose local fields hold the Paris wall-clock time", () => {
-    const d = utcToParisDate("2026-01-15T10:00:00Z");
-    expect([d.getHours(), d.getMinutes()]).toEqual([11, 0]);
-  });
-
-  // Known bug: unlike utcToParisInput, there is no guard on missing input.
-  it.fails("does not throw on a missing timestamp", () => {
-    // Cast: JS callers can still pass null until every caller is typed
-    expect(() => utcToParisDate(null as unknown as string)).not.toThrow();
-  });
-});
-
-describe("formatZonedToIsoString", () => {
-  it("formats the local fields with zero padding and no offset", () => {
-    expect(formatZonedToIsoString(new Date(2026, 0, 5, 3, 4, 5))).toBe("2026-01-05T03:04:05");
+describe("bucketTimestamp", () => {
+  it.each(["", null, undefined, "not a date"])("returns null for %s", (input) => {
+    expect(bucketTimestamp(input)).toBeNull();
   });
 });

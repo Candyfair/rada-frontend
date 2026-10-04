@@ -1,58 +1,104 @@
-import { toZonedTime, format as formatTz } from "date-fns-tz";
+// -------------------------------------------------------------------
+// Paris time conversions. The app shows every time in Paris time, but
+// the device may run in any timezone: nothing here reads the host
+// timezone. Paris wall-clock times are handled as "wall-clock ms", the
+// Paris date and time fields read as if they were UTC.
+// -------------------------------------------------------------------
 
 const TIMEZONE = "Europe/Paris";
 
+const HOUR_MS = 3_600_000;
+const BUCKET_MS = 10 * 60_000;
+
+const parisClock = new Intl.DateTimeFormat("en-US", {
+  timeZone: TIMEZONE,
+  hourCycle: "h23",
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+  hour: "numeric",
+  minute: "numeric",
+  second: "numeric",
+});
+
+// Ends with "Z" or a "+01:00" / "-0500" style offset
+const HAS_OFFSET = /(?:Z|[+-]\d{2}:?\d{2})$/i;
+
+// Parse a backend timestamp, read as UTC when it has no offset.
+// Returns null for a missing or invalid timestamp.
+function parseUtc(isoString: string | null | undefined): number | null {
+  if (!isoString) return null;
+  const time = Date.parse(HAS_OFFSET.test(isoString) ? isoString : isoString + "Z");
+  return isNaN(time) ? null : time;
+}
+
+// Paris wall clock at the given instant, in wall-clock ms
+function parisWallClockAt(time: number): number {
+  const field = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parisClock.formatToParts(time).find((p) => p.type === type)?.value);
+  const wholeSeconds = Date.UTC(
+    field("year"),
+    field("month") - 1,
+    field("day"),
+    field("hour"),
+    field("minute"),
+    field("second")
+  );
+  // Intl drops the milliseconds
+  return wholeSeconds + (time % 1000);
+}
+
+// Paris offset from UTC at the given instant: +1h in winter, +2h in summer
+function parisOffsetAt(time: number): number {
+  return parisWallClockAt(time) - time;
+}
+
+// Wall-clock ms as an ISO string without offset: "2026-05-31T12:44:40"
+function formatWallClock(wallClock: number): string {
+  return new Date(wallClock).toISOString().slice(0, 19);
+}
+
 // Convert a datetime-local input value (Paris local time) to a UTC ISO string
-// suitable for sending to the API
+// suitable for sending to the API.
+// "2026-05-31T12:44" → "2026-05-31T10:44:00.000Z"
+//
+// Around a DST change, it resolves like browsers and Temporal ("compatible"):
+// - a time that occurs twice (25 Oct 02:30) gives the first one, summer time
+// - a time that is skipped (29 Mar 02:30) moves forward by the gap (03:30)
 export function parisInputToUtcIso(localDateTimeString: string): string {
-  const date = new Date(localDateTimeString);
-  if (isNaN(date.getTime())) return localDateTimeString;
-  return date.toISOString();
+  // The input fields read as if they were UTC: no host timezone involved
+  const wallClock = Date.parse(localDateTimeString + "Z");
+  if (isNaN(wallClock)) return localDateTimeString;
+
+  // Paris offsets before and after a DST change near this time
+  const offsetBefore = parisOffsetAt(wallClock - 12 * HOUR_MS);
+  const offsetAfter = parisOffsetAt(wallClock + 12 * HOUR_MS);
+
+  // An offset fits when Paris really shows this wall clock at that instant
+  const matches = [offsetBefore, offsetAfter]
+    .map((offset) => wallClock - offset)
+    .filter((time) => parisWallClockAt(time) === wallClock);
+
+  const utc = matches.length > 0 ? Math.min(...matches) : wallClock - offsetBefore;
+  return new Date(utc).toISOString();
 }
 
 // Convert a UTC ISO string to a Paris time string formatted for datetime-local inputs
 // "2026-05-31T10:44:40" or "2026-05-31T10:44:40Z" → "2026-05-31T12:44"
 export function utcToParisInput(isoString: string | null | undefined): string {
-  if (!isoString) return "";
-  const normalized =
-    isoString.includes("Z") || isoString.includes("+") ? isoString : isoString + "Z";
-  const date = new Date(normalized);
-  if (isNaN(date.getTime())) return "";
-  const parisDate = toZonedTime(date, TIMEZONE);
-  return formatTz(parisDate, "yyyy-MM-dd'T'HH:mm", { timeZone: TIMEZONE });
-}
-
-// Convert a UTC ISO string to a Paris-time Date object
-export function utcToParisDate(isoString: string): Date {
-  const normalized =
-    isoString.includes("Z") || isoString.includes("+") ? isoString : isoString + "Z";
-  return toZonedTime(new Date(normalized), TIMEZONE);
-}
-
-// Format a Paris-zoned Date object to a plain ISO-like string without offset
-// Used for bucketing timestamps into consistent keys
-export function formatParisDate(parisDate: Date, pattern: string): string {
-  return formatTz(parisDate, pattern, { timeZone: TIMEZONE });
-}
-
-// Format a zoned date to a plain ISO-like string using its local time components.
-// Uses getFullYear/getMonth etc. to avoid any timezone re-conversion.
-export function formatZonedToIsoString(zonedDate: Date): string {
-  const year = zonedDate.getFullYear();
-  const month = String(zonedDate.getMonth() + 1).padStart(2, "0");
-  const day = String(zonedDate.getDate()).padStart(2, "0");
-  const hours = String(zonedDate.getHours()).padStart(2, "0");
-  const mins = String(zonedDate.getMinutes()).padStart(2, "0");
-  const secs = String(zonedDate.getSeconds()).padStart(2, "0");
-  return `${year}-${month}-${day}T${hours}:${mins}:${secs}`;
+  const time = parseUtc(isoString);
+  if (time === null) return "";
+  return formatWallClock(parisWallClockAt(time)).slice(0, 16);
 }
 
 // Convert a UTC timestamp to Paris time, then round to nearest 10-minute bucket.
 // This ensures records from different assets align on the same X axis
 // regardless of sub-minute recording offsets.
-export function bucketTimestamp(isoString: string): string {
-  const parisDate = utcToParisDate(isoString);
-  const minutes = parisDate.getMinutes();
-  parisDate.setMinutes(Math.round(minutes / 10) * 10, 0, 0);
-  return formatZonedToIsoString(parisDate);
+// "2026-10-03T12:05:00Z" → "2026-10-03T14:10:00"
+// Returns null for a missing or invalid timestamp.
+export function bucketTimestamp(isoString: string | null | undefined): string | null {
+  const time = parseUtc(isoString);
+  if (time === null) return null;
+  const wallClock = parisWallClockAt(time);
+  return formatWallClock(Math.round(wallClock / BUCKET_MS) * BUCKET_MS);
 }
