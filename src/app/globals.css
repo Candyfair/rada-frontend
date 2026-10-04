@@ -1,43 +1,42 @@
 @font-face {
-  font-family: 'Roboto Mono';
+  font-family: "Roboto Mono";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/fonts/roboto-mono-regular.woff2') format('woff2');
+  src: url("/fonts/roboto-mono-regular.woff2") format("woff2");
 }
 
 @font-face {
-  font-family: 'Roboto Mono';
+  font-family: "Roboto Mono";
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url('/fonts/roboto-mono-600.woff2') format('woff2');
+  src: url("/fonts/roboto-mono-600.woff2") format("woff2");
 }
 
 @font-face {
-  font-family: 'Spectral';
+  font-family: "Spectral";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/fonts/spectral-regular.woff2') format('woff2');
+  src: url("/fonts/spectral-regular.woff2") format("woff2");
 }
 
 @font-face {
-  font-family: 'Spectral';
+  font-family: "Spectral";
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url('/fonts/spectral-medium.woff2') format('woff2');
+  src: url("/fonts/spectral-medium.woff2") format("woff2");
 }
 
 @font-face {
-  font-family: 'Spectral';
+  font-family: "Spectral";
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url('/fonts/spectral-600.woff2') format('woff2');
+  src: url("/fonts/spectral-600.woff2") format("woff2");
 }
-
 
 html {
   height: 100%;

@@ -10,94 +10,94 @@
 
 :root {
   /* Typography */
-  --font-mono:   'Roboto Mono', monospace;
-  --font-serif:  'Spectral', serif;
+  --font-mono: "Roboto Mono", monospace;
+  --font-serif: "Spectral", serif;
 
   /* ---- Raw colour values (HSL components only, no hsl() wrapper) ---- */
   /* Used to compose hsla() variants without duplicating hue/sat values  */
 
-  --hsl-background:        42, 22%, 91%;    /* #EEECE6 — light background   */
-  --hsl-background-dark:   65, 46%, 10%;    /* #24260E — dark background    */
-  --hsl-panel:             51, 100%, 75%;   /* #FFEA83 — panel yellow       */
-  --hsl-text-primary:      65, 46%, 10%;    /* #24260E — dark text          */
-  --hsl-battery:           189, 18%, 58%;   /* #7AA5AB — battery bubble     */
-  --hsl-solar:             134, 23%, 57%;   /* #78AB84 - solar bubble       */
-  --hsl-wind:              15, 71%, 66%;    /* #E68B6D - wind bubble       */
-  --hsl-fault:             351, 35%, 30%;   /* #683138 — fault/inactive     */
+  --hsl-background: 42, 22%, 91%; /* #EEECE6 — light background   */
+  --hsl-background-dark: 65, 46%, 10%; /* #24260E — dark background    */
+  --hsl-panel: 51, 100%, 75%; /* #FFEA83 — panel yellow       */
+  --hsl-text-primary: 65, 46%, 10%; /* #24260E — dark text          */
+  --hsl-battery: 189, 18%, 58%; /* #7AA5AB — battery bubble     */
+  --hsl-solar: 134, 23%, 57%; /* #78AB84 - solar bubble       */
+  --hsl-wind: 15, 71%, 66%; /* #E68B6D - wind bubble       */
+  --hsl-fault: 351, 35%, 30%; /* #683138 — fault/inactive     */
 
   /* ---- Semantic tokens — light theme (default) ---- */
 
   /* Backgrounds */
-  --color-bg:              hsl(var(--hsl-background));
-  --color-bg-header:       hsla(var(--hsl-background), 0.3);
-  --color-panel-bg:        hsla(var(--hsl-panel), 0.70);
+  --color-bg: hsl(var(--hsl-background));
+  --color-bg-header: hsla(var(--hsl-background), 0.3);
+  --color-panel-bg: hsla(var(--hsl-panel), 0.7);
 
   /* Text */
-  --color-text-primary:    hsl(var(--hsl-text-primary));
-  --color-text-secondary:  hsl(var(--hsl-text-primary));
-  --color-text-on-dark:    hsl(0, 0%, 100%);
+  --color-text-primary: hsl(var(--hsl-text-primary));
+  --color-text-secondary: hsl(var(--hsl-text-primary));
+  --color-text-on-dark: hsl(0, 0%, 100%);
 
   /* Panel internals */
-  --color-panel-label:     hsl(51, 100%, 75%);    /* #FFEA83 */
-  --color-panel-value:     hsl(0, 0%, 100%);      /* #FFFFFF */
-  --color-panel-row-bg:    hsl(65, 46%, 10%);     /* #24260E */
-  --color-panel-border:    hsl(65, 46%, 10%);     /* #24260E */
-  --color-panel-title:     hsl(65, 46%, 10%);     /* #24260E */
+  --color-panel-label: hsl(51, 100%, 75%); /* #FFEA83 */
+  --color-panel-value: hsl(0, 0%, 100%); /* #FFFFFF */
+  --color-panel-row-bg: hsl(65, 46%, 10%); /* #24260E */
+  --color-panel-border: hsl(65, 46%, 10%); /* #24260E */
+  --color-panel-title: hsl(65, 46%, 10%); /* #24260E */
 
   /* Detail link button */
-  --color-detail-btn-bg:   hsl(65, 46%, 10%);     /* #24260E */
+  --color-detail-btn-bg: hsl(65, 46%, 10%); /* #24260E */
   --color-detail-btn-text: hsl(0, 0%, 100%);
 
   /* Metric toggle */
-  --color-toggle-bg:       hsl(20, 5%, 83%);      /* #D9D5D3 */
-  --color-toggle-active:   hsl(var(--hsl-battery));
-  --color-toggle-inactive: hsla(var(--hsl-fault), 0.70);
+  --color-toggle-bg: hsl(20, 5%, 83%); /* #D9D5D3 */
+  --color-toggle-active: hsl(var(--hsl-battery));
+  --color-toggle-inactive: hsla(var(--hsl-fault), 0.7);
 
   /* Filter modal */
-  --color-modal-bg:        hsl(var(--hsl-background));
-  --color-modal-border:    hsl(var(--hsl-text-primary));
-  --color-modal-label:     hsl(var(--hsl-text-primary));
+  --color-modal-bg: hsl(var(--hsl-background));
+  --color-modal-border: hsl(var(--hsl-text-primary));
+  --color-modal-label: hsl(var(--hsl-text-primary));
 
   /* Header icons */
-  --color-icon:            hsl(var(--hsl-text-primary));
+  --color-icon: hsl(var(--hsl-text-primary));
 
   /* Filter toggle switch */
-  --color-switch-track:    hsl(20, 5%, 85%);      /* #D9D7D4 */
-  --color-switch-thumb-on: hsl(351, 35%, 30%);    /* #683138 — active   */
-  --color-switch-thumb-off:hsl(0, 0%, 50%);       /* #7F7F7F — inactive */
+  --color-switch-track: hsl(20, 5%, 85%); /* #D9D7D4 */
+  --color-switch-thumb-on: hsl(351, 35%, 30%); /* #683138 — active   */
+  --color-switch-thumb-off: hsl(0, 0%, 50%); /* #7F7F7F — inactive */
 
   /* Logout menu */
-  --color-logout-border:   hsl(20, 5%, 83%);      /* #D9D5D3 */
+  --color-logout-border: hsl(20, 5%, 83%); /* #D9D5D3 */
 
   /* Total Power indicator */
-  --color-power-bg:        hsla(var(--hsl-panel), 0.70);
-  --color-power-border:    hsl(65, 46%, 10%);      /* #24260E */
+  --color-power-bg: hsla(var(--hsl-panel), 0.7);
+  --color-power-border: hsl(65, 46%, 10%); /* #24260E */
 
   /* Settings icon border */
-  --color-settings-border: hsl(20, 5%, 83%);       /* #D9D5D3 */
+  --color-settings-border: hsl(20, 5%, 83%); /* #D9D5D3 */
 
   /* Login card */
-  --color-login-card-bg:   hsl(var(--hsl-background));
-  --color-login-card-border: hsl(65, 46%, 10%);    /* #24260E */
-  --color-login-input-bg:  hsl(0, 0%, 100%);
-  --color-login-input-border: hsl(65, 46%, 10%);   /* #24260E */
-  --color-login-eye: hsl(65, 46%, 10%);   /* #24260E — same as text-primary */
+  --color-login-card-bg: hsl(var(--hsl-background));
+  --color-login-card-border: hsl(65, 46%, 10%); /* #24260E */
+  --color-login-input-bg: hsl(0, 0%, 100%);
+  --color-login-input-border: hsl(65, 46%, 10%); /* #24260E */
+  --color-login-eye: hsl(65, 46%, 10%); /* #24260E — same as text-primary */
 
   /* Status / loading */
-  --color-text-muted:      hsl(200, 10%, 55%);
+  --color-text-muted: hsl(200, 10%, 55%);
 
   /* Detail page blocks */
-  --color-detail-block-bg:   hsla(0, 0%, 85%, 0.70);
-  --color-detail-icon-bg:    hsl(0, 0%, 85%);
+  --color-detail-block-bg: hsla(0, 0%, 85%, 0.7);
+  --color-detail-icon-bg: hsl(0, 0%, 85%);
 
   /* Status colours */
-  --color-status-active:     hsl(134, 73%, 29%); 
-  --color-status-fault:      hsl(3, 75%, 50%);
-  --color-status-curtailed:  hsl(3, 75%, 50%);
-  --color-value-negative:    hsl(217, 89%, 61%);
+  --color-status-active: hsl(134, 73%, 29%);
+  --color-status-fault: hsl(3, 75%, 50%);
+  --color-status-curtailed: hsl(3, 75%, 50%);
+  --color-value-negative: hsl(217, 89%, 61%);
 
   /* Detail page text */
-  --color-detail-text:       hsl(351, 35%, 30%);
+  --color-detail-text: hsl(351, 35%, 30%);
 
   /* Stats */
   --color-input-bg: hsl(0, 0%, 100%);
@@ -107,29 +107,29 @@
 /* ---- Dark theme ---- */
 /* Applied when <html data-theme="dark"> */
 [data-theme="dark"] {
-  --color-bg:              hsl(var(--hsl-background-dark));
-  --color-bg-header:       hsla(var(--hsl-background-dark), 0.3);
-  --color-icon:            hsl(var(--hsl-background));
+  --color-bg: hsl(var(--hsl-background-dark));
+  --color-bg-header: hsla(var(--hsl-background-dark), 0.3);
+  --color-icon: hsl(var(--hsl-background));
 
   /* Text */
-  --color-text-secondary:  hsl(var(--hsl-background));
+  --color-text-secondary: hsl(var(--hsl-background));
 
   /* Panel is identical in both themes — no overrides needed */
 
   /* Detail link button */
-  --color-detail-btn-bg:   hsl(var(--hsl-background));    
+  --color-detail-btn-bg: hsl(var(--hsl-background));
   --color-detail-btn-text: hsl(var(--hsl-text-primary));
 
   /* Icons visible on dark background */
-  --color-icon:            hsl(var(--hsl-background));
+  --color-icon: hsl(var(--hsl-background));
 
   /* Modal stays the same bg but text/border colours stay legible */
-  --color-modal-bg:        hsl(var(--hsl-background));
-  --color-modal-border:    hsl(var(--hsl-text-primary));
-  --color-modal-label:     hsl(var(--hsl-text-primary));
+  --color-modal-bg: hsl(var(--hsl-background));
+  --color-modal-border: hsl(var(--hsl-text-primary));
+  --color-modal-label: hsl(var(--hsl-text-primary));
 
   /* Muted text */
-  --color-text-muted:      hsl(200, 10%, 55%);
+  --color-text-muted: hsl(200, 10%, 55%);
 
   /* Stats */
   --color-input-bg: hsla(var(--hsl-background), 0.8);
