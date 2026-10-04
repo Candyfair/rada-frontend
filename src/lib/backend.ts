@@ -12,7 +12,8 @@ function errorResponse(detail: string, status: number): Response {
 /**
  * GET `path` on the backend and relay its JSON body and status.
  *
- * - 500 when API_BASE_URL or API_KEY is not configured
+ * - 500 when API_BASE_URL or API_KEY is not configured, or when
+ *   API_BASE_URL is not a valid URL (e.g. missing "https://")
  * - 502 when the backend is unreachable or does not answer with JSON
  */
 export async function fetchBackend(
@@ -26,7 +27,14 @@ export async function fetchBackend(
     return errorResponse("Server misconfigured", 500);
   }
 
-  const url = new URL(`${baseUrl}${path}`);
+  let url: URL;
+  try {
+    url = new URL(`${baseUrl}${path}`);
+  } catch {
+    // The URL embeds the base URL only, never the API key
+    console.error(`[api] API_BASE_URL is not a valid URL: ${baseUrl}`);
+    return errorResponse("Server misconfigured", 500);
+  }
   for (const [key, value] of Object.entries(params ?? {})) {
     if (value) url.searchParams.set(key, value);
   }
