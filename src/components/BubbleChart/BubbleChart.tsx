@@ -1,45 +1,40 @@
 import { useEffect, useRef, useCallback, useState } from "react";
+import type { KeyboardEvent } from "react";
 import * as d3 from "d3";
-import { getBubbleColor, getMetricValue } from "@/lib/bubbleUtils";
+import { getBubbleColor } from "@/lib/bubbleUtils";
+import type { Asset, BubbleMetric } from "@/types/api";
 import BubbleNode from "./BubbleNode";
+import { CONFIG, formatMetricLabel, labelFontSize, syncNodes } from "./bubbleLayout";
+import type { BubbleDatum } from "./bubbleLayout";
 
-const CONFIG = {
-  MIN_RADIUS: 24,
-  MAX_RADIUS: 72,
-  CENTER_FORCE_STRENGTH: 0.04,
-  COLLISION_PADDING: 6,
-  ZOOM_MIN: 0.5,
-  ZOOM_MAX: 4,
-  FLOAT_SPEED_MIN: 0.006,
-  FLOAT_SPEED_MAX: 0.022,
-  FLOAT_FORCE: 0.22,
-  VELOCITY_DECAY: 0.55,
-};
+const collide = () =>
+  d3.forceCollide<BubbleDatum>((d) => d.r + CONFIG.COLLISION_PADDING).strength(0.8);
 
-export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
-  const svgRef = useRef(null);
-  const gRef = useRef(null);
-  const labelsRef = useRef(null); // ref to the HTML label overlay container
-  const simulationRef = useRef(null);
-  const zoomRef = useRef(null);
-  const nodesRef = useRef([]);
+interface BubbleChartProps {
+  /** Assets drawn as bubbles, already filtered */
+  assets: Asset[];
+  /** Metric that sizes the bubbles and is shown under their name */
+  metric: BubbleMetric;
+  selectedId: number | null;
+  onSelect: (asset: Asset) => void;
+}
 
-  const [nodes, setNodes] = useState([]);
+export default function BubbleChart({ assets, metric, selectedId, onSelect }: BubbleChartProps) {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const gRef = useRef<SVGGElement>(null);
+  const labelsRef = useRef<HTMLDivElement>(null); // ref to the HTML label overlay container
+  const simulationRef = useRef<d3.Simulation<BubbleDatum, undefined>>(null);
+  const nodesRef = useRef<BubbleDatum[]>([]);
+  // Assets and metric of the current layout, to tell a data refresh
+  // from a change that moves the bubbles around
+  const layoutKeyRef = useRef<string | null>(null);
+
+  const [nodes, setNodes] = useState<BubbleDatum[]>([]);
   const [currentScale, setCurrentScale] = useState(1);
 
   // currentZoom tracks the active D3 zoom transform so label positions
   // can be recalculated correctly when the user pans or zooms.
   const currentZoomRef = useRef(d3.zoomIdentity);
-
-  const buildRadiusScale = useCallback((data, metricKey) => {
-    // getMetricValue returns Math.abs() for power_mw,
-    // so negative values don't collapse the radius scale
-    const values = data.map((b) => getMetricValue(b, metricKey));
-    return d3
-      .scaleLinear()
-      .domain([d3.min(values), d3.max(values)])
-      .range([CONFIG.MIN_RADIUS, CONFIG.MAX_RADIUS]);
-  }, []);
 
   // -------------------------------------------------------------------
   // LABEL POSITION UPDATE
@@ -49,7 +44,7 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
   // -------------------------------------------------------------------
   const updateLabelPositions = useCallback(() => {
     if (!labelsRef.current) return;
-    const labelDivs = labelsRef.current.children;
+    const labelDivs = labelsRef.current.querySelectorAll<HTMLDivElement>(":scope > div");
     const t = currentZoomRef.current;
 
     nodesRef.current.forEach((node, i) => {
@@ -66,18 +61,20 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
 
   // -------------------------------------------------------------------
   // SIMULATION INIT — runs once on mount only
-  // assets are NOT in the dependency array intentionally:
-  // we never want to restart the simulation when data refreshes.
+  // Data refreshes never restart the simulation: the data effect below
+  // only swaps its nodes.
   // -------------------------------------------------------------------
   useEffect(() => {
-    if (!svgRef.current) return;
+    const svgEl = svgRef.current;
+    if (!svgEl) return;
 
-    const svg = d3.select(svgRef.current);
-    const width = svgRef.current.clientWidth;
-    const height = svgRef.current.clientHeight;
+    const svg = d3.select(svgEl);
+    const width = svgEl.clientWidth;
+    const height = svgEl.clientHeight;
 
     // Initialise with empty nodes — the data update effect will populate them
     nodesRef.current = [];
+    layoutKeyRef.current = null;
 
     function floatForce() {
       nodesRef.current.forEach((node) => {
@@ -88,9 +85,9 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
     }
 
     const simulation = d3
-      .forceSimulation([])
+      .forceSimulation<BubbleDatum>([])
       .force("center", d3.forceCenter(width / 2, height / 2).strength(CONFIG.CENTER_FORCE_STRENGTH))
-      .force("collide", d3.forceCollide((d) => d.r + CONFIG.COLLISION_PADDING).strength(0.8))
+      .force("collide", collide())
       .force("x", d3.forceX(width / 2).strength(0.02))
       .force("y", d3.forceY(height / 2).strength(0.02))
       .force("float", floatForce)
@@ -101,9 +98,7 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
         if (!gRef.current) return;
         const groups = gRef.current.querySelectorAll("g.bubble-node");
         nodesRef.current.forEach((node, i) => {
-          if (groups[i]) {
-            groups[i].setAttribute("transform", `translate(${node.x}, ${node.y})`);
-          }
+          groups[i]?.setAttribute("transform", `translate(${node.x}, ${node.y})`);
         });
         updateLabelPositions();
       });
@@ -111,130 +106,68 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
     simulationRef.current = simulation;
 
     const zoom = d3
-      .zoom()
+      .zoom<SVGSVGElement, unknown>()
       .scaleExtent([CONFIG.ZOOM_MIN, CONFIG.ZOOM_MAX])
-      .on("zoom", (event) => {
-        d3.select(gRef.current).attr("transform", event.transform);
+      .on("zoom", (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
+        if (gRef.current) gRef.current.setAttribute("transform", event.transform.toString());
         currentZoomRef.current = event.transform;
         updateLabelPositions();
         setCurrentScale(event.transform.k);
       });
 
     svg.call(zoom);
-    const initialScale = 2.5;
     svg.call(
       zoom.transform,
       d3.zoomIdentity
         .translate(width / 2, height / 2)
-        .scale(initialScale)
+        .scale(CONFIG.INITIAL_ZOOM)
         .translate(-width / 2, -height / 2)
     );
 
-    zoomRef.current = zoom;
-
     return () => {
       simulation.stop();
+      simulationRef.current = null;
       svg.on(".zoom", null);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [updateLabelPositions]);
 
   // -------------------------------------------------------------------
-  // DATA UPDATE — runs on every assets refresh (polling) and filter change
-  // - First load: creates nodes with random positions
-  // - Filter change: rebuilds nodes but reuses known x/y positions
-  // - Silent poll: merges new values without touching positions
+  // DATA UPDATE — runs on every assets refresh (polling), filter change
+  // and metric change. Nodes already on screen keep their position;
+  // only their values and radius change.
   // -------------------------------------------------------------------
   useEffect(() => {
-    if (!assets.length || !simulationRef.current) return;
+    const simulation = simulationRef.current;
+    const svgEl = svgRef.current;
+    if (!simulation || !svgEl) return;
 
-    const width = svgRef.current.clientWidth;
-    const height = svgRef.current.clientHeight;
-    const radiusScale = buildRadiusScale(assets, metric);
+    const center = { x: svgEl.clientWidth / 2, y: svgEl.clientHeight / 2 };
+    const next = syncNodes(nodesRef.current, assets, metric, center);
+    nodesRef.current = next;
 
-    // Build a map of existing positions keyed by asset id
-    // so we can reuse them if the same asset reappears after a filter change
-    const existingPositions = {};
-    nodesRef.current.forEach((node) => {
-      existingPositions[node.id] = {
-        x: node.x,
-        y: node.y,
-        vx: node.vx,
-        vy: node.vy,
-      };
-    });
+    // A plain data refresh nudges the bubbles; a new set of assets or
+    // a new metric shakes them harder so they settle into the new layout
+    const layoutKey = `${metric}:${assets.map((a) => a.id).join(",")}`;
+    const isRefresh = layoutKey === layoutKeyRef.current;
+    layoutKeyRef.current = layoutKey;
 
-    // Check whether the current nodes match the incoming assets exactly
-    const currentIds = new Set(nodesRef.current.map((n) => n.id));
-    const incomingIds = new Set(assets.map((a) => a.id));
-    const sameSet =
-      currentIds.size === incomingIds.size && [...incomingIds].every((id) => currentIds.has(id));
-
-    if (sameSet && nodesRef.current.length > 0) {
-      // --- Silent poll: same assets, just update values ---
-      nodesRef.current.forEach((node) => {
-        const fresh = assets.find((a) => a.id === node.id);
-        if (!fresh) return;
-
-        const { x, y, vx, vy, floatAngle, floatSpeed } = node;
-        Object.assign(node, fresh);
-        node.x = x;
-        node.y = y;
-        node.vx = vx;
-        node.vy = vy;
-        node.floatAngle = floatAngle;
-        node.floatSpeed = floatSpeed;
-        node.r = radiusScale(getMetricValue(node, metric));
-      });
-
-      simulationRef.current
-        .force("collide", d3.forceCollide((d) => d.r + CONFIG.COLLISION_PADDING).strength(0.8))
-        .alpha(0.3)
-        .restart();
-
-      setNodes([...nodesRef.current]);
-    } else {
-      // --- First load or filter change: rebuild nodes ---
-      // Reuse known positions when available, otherwise place near centre
-      const newNodes = assets.map((b) => {
-        const known = existingPositions[b.id];
-        return {
-          ...b,
-          r: radiusScale(getMetricValue(b, metric)),
-          x: known ? known.x : width / 2 + (Math.random() - 0.5) * 100,
-          y: known ? known.y : height / 2 + (Math.random() - 0.5) * 100,
-          vx: known ? known.vx : 0,
-          vy: known ? known.vy : 0,
-          floatAngle: Math.random() * Math.PI * 2,
-          floatSpeed:
-            CONFIG.FLOAT_SPEED_MIN +
-            Math.random() * (CONFIG.FLOAT_SPEED_MAX - CONFIG.FLOAT_SPEED_MIN),
-        };
-      });
-
-      nodesRef.current = newNodes;
-      simulationRef.current.nodes(newNodes).alpha(0.5).restart();
-      setNodes([...newNodes]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [assets, buildRadiusScale]);
-
-  // -------------------------------------------------------------------
-  // METRIC UPDATE
-  // -------------------------------------------------------------------
-  useEffect(() => {
-    if (!simulationRef.current || !nodesRef.current.length) return;
-
-    const radiusScale = buildRadiusScale(assets, metric);
-    nodesRef.current.forEach((node) => {
-      node.r = radiusScale(getMetricValue(node, metric));
-    });
-
-    simulationRef.current
-      .force("collide", d3.forceCollide((d) => d.r + CONFIG.COLLISION_PADDING).strength(0.8))
-      .alpha(0.5)
+    // Setting the nodes re-initialises the forces, so the collision
+    // force picks up the new radii
+    simulation
+      .nodes(next)
+      .alpha(isRefresh ? 0.3 : 0.5)
       .restart();
-  }, [metric, assets, buildRadiusScale]);
+
+    // Render the new radii now, not at the next re-render
+    setNodes(next);
+  }, [assets, metric]);
+
+  function handleBubbleKeyDown(e: KeyboardEvent<SVGGElement>, node: BubbleDatum) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onSelect(node);
+    }
+  }
 
   // -------------------------------------------------------------------
   // RENDER
@@ -252,31 +185,37 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
         aria-label="Asset fleet map"
       >
         <g ref={gRef}>
-          {nodes.map((node) => (
-            <g
-              key={node.id}
-              className="bubble-node"
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelect(node);
-              }}
-              style={{ cursor: "pointer", willChange: "transform" }}
-            >
-              <BubbleNode
-                radius={node.r}
-                color={getBubbleColor(node)}
-                isSelected={node.id === selectedId}
-              />
-            </g>
-          ))}
+          {nodes.map((node) => {
+            const isSelected = node.id === selectedId;
+            return (
+              <g
+                key={node.id}
+                className="bubble-node"
+                role="button"
+                tabIndex={0}
+                aria-label={`${node.name}, ${formatMetricLabel(node, metric)}`}
+                aria-pressed={isSelected}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelect(node);
+                }}
+                onKeyDown={(e) => handleBubbleKeyDown(e, node)}
+                style={{ cursor: "pointer", willChange: "transform" }}
+              >
+                <BubbleNode radius={node.r} color={getBubbleColor(node)} isSelected={isSelected} />
+              </g>
+            );
+          })}
         </g>
       </svg>
 
       {/* ---- LAYER 2 : HTML label overlay ---- */}
       {/* position: absolute + inset: 0 makes this layer cover the SVG exactly. */}
       {/* pointerEvents: none lets taps fall through to the SVG circles below.  */}
+      {/* Hidden from screen readers: each bubble already carries its label.   */}
       <div
         ref={labelsRef}
+        aria-hidden="true"
         style={{
           position: "absolute",
           inset: 0,
@@ -285,15 +224,8 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
         }}
       >
         {nodes.map((node) => {
-          const rawPower = node.power_mw ?? 0;
-          const isNegative = metric === "power_mw" && rawPower < 0;
-
-          const metricLabel =
-            metric === "energy_mwh"
-              ? `${Math.round(node.energy_mwh).toFixed(1)} MWh`
-              : `${rawPower >= 0 ? "" : "-"}${Math.abs(rawPower).toFixed(2)} MW`;
-
-          const fontSize = Math.max(8, Math.min(node.r * currentScale * 0.24, 13 * currentScale));
+          const isNegative = metric === "power_mw" && node.power_mw < 0;
+          const fontSize = labelFontSize(node.r, currentScale);
           const isSelected = node.id === selectedId;
 
           return (
@@ -344,7 +276,7 @@ export default function BubbleChart({ assets, metric, selectedId, onSelect }) {
                   textAlign: "center",
                 }}
               >
-                {metricLabel}
+                {formatMetricLabel(node, metric)}
               </span>
             </div>
           );
