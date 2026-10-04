@@ -78,6 +78,21 @@ API_KEY=your-api-key
 
 ---
 
+## Tests
+
+```bash
+# Unit and component tests (Vitest)
+npm test
+
+# End-to-end tests (Playwright), on a phone and a desktop viewport
+npx playwright install chromium   # once
+npm run test:e2e
+```
+
+The end-to-end tests build the app and run it against a mock backend (`e2e/mock-backend.mts`) that serves the fixtures of `src/__fixtures__`. They need neither the real backend nor an API key, and never use the values of `.env.local`.
+
+---
+
 ## API Routes (Proxy)
 
 All browser-facing API calls hit Next.js routes under `src/app/api/`. Each route injects the `X-API-Key` header and forwards the request to the backend.
