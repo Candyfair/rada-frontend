@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import type { KeyboardEvent } from "react";
 import {
   LineChart,
   Line,
@@ -11,12 +12,15 @@ import {
 import { format, parseISO } from "date-fns";
 import { ChevronDown, X } from "lucide-react";
 import { useAssetHistory } from "@/hooks/useAssetHistory";
+import { parisInputToUtcIso, utcToParisInput } from "@/lib/dateUtils";
+import type { Asset } from "@/types/api";
+import { buildXTicks, mergeRecords, spanInHours } from "./chartData";
+import type { Metric } from "./chartData";
 import styles from "./AssetComparisonChart.module.css";
-import { parisInputToUtcIso, utcToParisInput, bucketTimestamp } from "@/lib/dateUtils";
 
 // Metrics available for Y axis — label shown in the UI, key in the record object,
 // and unit displayed on the axis
-const METRICS = [
+const METRICS: Metric[] = [
   { key: "power_mw", label: "Power", unit: "MW" },
   { key: "energy_mwh", label: "Energy", unit: "MWh" },
   { key: "reactive_power_mvar", label: "Reactive Power", unit: "MVAr" },
@@ -35,222 +39,133 @@ const LINE_COLORS = [
   "hsl(217, 89%, 61%)", // --color-value-negative (blue)
 ];
 
-// initialAssetId — pre-selected asset id or null
-// batteries      — array of battery assets from useAssets()
-export default function AssetComparisonChart({ initialAssetId, assets }) {
-  useEffect(() => {
-    if (assets?.length > 0) {
-      console.log("asset id type:", typeof assets[0].id, assets[0].id);
-    }
-  }, [assets]);
+const AXIS_TICK = { fontFamily: "var(--font-mono)", fontSize: 10 };
 
-  useEffect(() => {
-    if (initialAssetId != null) {
-      console.log("initialAssetId type:", typeof initialAssetId, initialAssetId);
-    }
-  }, [initialAssetId]);
+// Format a parsed date, falling back to the raw value if it is not a date
+function safeFormat(timestamp: string, pattern: string): string {
+  try {
+    return format(parseISO(timestamp), pattern);
+  } catch {
+    return timestamp;
+  }
+}
 
-  const batteries = assets ?? [];
+interface AssetComparisonChartProps {
+  /** Asset shown when the chart opens. Remount the chart to change it. */
+  initialAssetId: number | null;
+  /** Assets offered in the selector */
+  assets: Asset[];
+}
 
+export default function AssetComparisonChart({
+  initialAssetId,
+  assets,
+}: AssetComparisonChartProps) {
   const { histories, initAsset, reloadAsset, removeAsset } = useAssetHistory();
 
-  const [selectedIds, setSelectedIds] = useState([]);
-  const [activeMetric, setActiveMetric] = useState(METRICS[0]);
-  const [fromInput, setFromInput] = useState("");
-  const [toInput, setToInput] = useState("");
+  const [selectedIds, setSelectedIds] = useState<number[]>(() =>
+    initialAssetId == null ? [] : [initialAssetId]
+  );
+  const [activeMetric, setActiveMetric] = useState<Metric>(METRICS[0]!);
+  // null until the user edits a date: the input then shows the range
+  // of the first selected asset
+  const [fromInput, setFromInput] = useState<string | null>(null);
+  const [toInput, setToInput] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const dropdownRef = useRef(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // When the modal opens with a pre-selected asset, add it to selectedIds
-  // and trigger its initial data fetch
+  // Load the pre-selected asset. initAsset is stable and skips an asset
+  // already requested, so this runs once even in Strict Mode.
   useEffect(() => {
-    if (initialAssetId == null) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- TODO(ts-migration): refactor, see migration plan phase 3
-    setSelectedIds([initialAssetId]);
-    initAsset(initialAssetId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- TODO(ts-migration): refactor, see migration plan phase 3
-  }, [initialAssetId]);
-
-  // When the first asset's data loads, populate the date inputs
-  // with the actual from_ts / to_ts returned by the API
-  useEffect(() => {
-    if (selectedIds.length === 0) return;
-    const firstHistory = histories[selectedIds[0]];
-    if (!firstHistory || firstHistory.isLoading || !firstHistory.fromTs) return;
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- TODO(ts-migration): refactor, see migration plan phase 3
-    setFromInput(utcToParisInput(firstHistory.fromTs));
-    setToInput(utcToParisInput(firstHistory.toTs));
-  }, [histories, selectedIds]);
+    if (initialAssetId != null) initAsset(initialAssetId);
+  }, [initialAssetId, initAsset]);
 
   useEffect(() => {
-    function handleOutsideClick(e) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+    if (!isDropdownOpen) return;
+    function handleOutsideClick(e: MouseEvent | TouchEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setIsDropdownOpen(false);
       }
     }
-    if (isDropdownOpen) {
-      document.addEventListener("mousedown", handleOutsideClick);
-      document.addEventListener("touchstart", handleOutsideClick);
-    }
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("touchstart", handleOutsideClick);
     return () => {
       document.removeEventListener("mousedown", handleOutsideClick);
       document.removeEventListener("touchstart", handleOutsideClick);
     };
   }, [isDropdownOpen]);
 
+  const firstSelectedId = selectedIds[0];
+  const firstHistory = firstSelectedId == null ? undefined : histories[firstSelectedId];
+  const from = fromInput ?? utcToParisInput(firstHistory?.fromTs);
+  const to = toInput ?? utcToParisInput(firstHistory?.toTs);
+
+  const nameOf = (id: number | string) =>
+    assets.find((a) => String(a.id) === String(id))?.name ?? `Asset ${id}`;
+
   // ------------------------------------------------------------------
   // HANDLERS
   // ------------------------------------------------------------------
-  const handleAddBattery = useCallback(
-    (id) => {
-      if (selectedIds.includes(id)) return;
-      const newIds = [...selectedIds, id];
-      setSelectedIds(newIds);
+  // Load the given assets over the range shown in the inputs.
+  // The range is kept as typed, so it does not move while the data loads.
+  function loadRange(ids: number[]) {
+    setFromInput(from);
+    setToInput(to);
+    for (const id of ids) reloadAsset(id, parisInputToUtcIso(from), parisInputToUtcIso(to));
+  }
 
-      if (fromInput && toInput) {
-        newIds.forEach((assetId) => {
-          reloadAsset(assetId, parisInputToUtcIso(fromInput), parisInputToUtcIso(toInput));
-        });
-      } else {
-        initAsset(id);
-      }
+  function handleAddAsset(id: number) {
+    if (selectedIds.includes(id)) return;
+    const newIds = [...selectedIds, id];
+    setSelectedIds(newIds);
 
+    // Same range for every line: reload them all over the current range
+    if (from && to) loadRange(newIds);
+    else initAsset(id);
+
+    setIsDropdownOpen(false);
+  }
+
+  function handleRemoveAsset(id: number) {
+    setSelectedIds((prev) => prev.filter((sid) => sid !== id));
+    removeAsset(id);
+  }
+
+  function handleApplyDateRange() {
+    if (from && to) loadRange(selectedIds);
+  }
+
+  function handleSelectorKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    // Keys pressed on a tag's remove button are not for the selector
+    if (e.target !== e.currentTarget) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setIsDropdownOpen((prev) => !prev);
+    } else if (e.key === "Escape") {
       setIsDropdownOpen(false);
-    },
-    [selectedIds, fromInput, toInput, initAsset, reloadAsset]
-  );
-
-  const handleRemoveBattery = useCallback(
-    (id) => {
-      setSelectedIds((prev) => prev.filter((sid) => sid !== id));
-      removeAsset(id);
-    },
-    [removeAsset]
-  );
-
-  // Apply the date range to all currently selected assets
-  const handleApplyDateRange = useCallback(() => {
-    if (!fromInput || !toInput) return;
-    selectedIds.forEach((id) => {
-      reloadAsset(id, parisInputToUtcIso(fromInput), parisInputToUtcIso(toInput));
-    });
-  }, [fromInput, toInput, selectedIds, reloadAsset]);
+    }
+  }
 
   // ------------------------------------------------------------------
   // RECHARTS
   // ------------------------------------------------------------------
-  // Recharts expects a single flat array where each entry is a point in time.
-  // All selected assets' records are merged by timestamp so lines share the same X axis.
-  // Result shape: [{ timestamp: "...", 1: 1.23, 3: -0.45 }, ...]
-
-  const chartData = useCallback(() => {
-    if (selectedIds.length === 0) return [];
-
-    // Collect all unique timestamps across all selected assets
-    const timestampSet = new Set();
-    selectedIds.forEach((id) => {
-      (histories[id]?.records ?? []).forEach((r) => {
-        timestampSet.add(bucketTimestamp(r.timestamp));
-      });
-    });
-
-    // Build a lookup map per asset for O(1) access during merge
-    const lookups = {};
-    selectedIds.forEach((id) => {
-      lookups[id] = {};
-      (histories[id]?.records ?? []).forEach((r) => {
-        lookups[id][bucketTimestamp(r.timestamp)] = r[activeMetric.key];
-      });
-    });
-
-    // Assemble the merged array, sorted chronologically
-    return Array.from(timestampSet)
-      .sort()
-      .map((ts) => {
-        const point = { timestamp: ts };
-        selectedIds.forEach((id) => {
-          // undefined becomes null so Recharts renders a gap instead of zero
-          point[String(id)] = lookups[id][ts] ?? null;
-        });
-        return point;
-      });
-  }, [selectedIds, histories, activeMetric]);
-
-  const data = chartData();
-  const isAnyLoading = selectedIds.some((id) => histories[id]?.isLoading);
-
-  // Determine the total time range covered by the chart data, in hours
-  const totalHours =
-    data.length > 1
-      ? (new Date(data[data.length - 1].timestamp) - new Date(data[0].timestamp)) / (1000 * 60 * 60)
-      : 0;
-
-  // Build explicit tick positions: first point, one per day change, last point.
-  // This guarantees no duplicate day labels regardless of data density.
-  const xTicks = useMemo(() => {
-    if (data.length === 0) return [];
-
-    if (totalHours > 24) {
-      // One tick per day change + first and last point
-      const ticks = [data[0].timestamp];
-      let lastDay = format(parseISO(data[0].timestamp), "yyyy-MM-dd");
-
-      for (let i = 1; i < data.length - 1; i++) {
-        const day = format(parseISO(data[i].timestamp), "yyyy-MM-dd");
-        if (day !== lastDay) {
-          ticks.push(data[i].timestamp);
-          lastDay = day;
-        }
-      }
-
-      const lastTs = data[data.length - 1].timestamp;
-      if (lastTs !== ticks[ticks.length - 1]) ticks.push(lastTs);
-      return ticks;
-    } else {
-      // One tick per full hour — find data points closest to each hour boundary
-      const ticks = [];
-      let lastHour = null;
-
-      for (const point of data) {
-        const date = parseISO(point.timestamp);
-        const hour = format(date, "yyyy-MM-dd HH");
-        if (hour !== lastHour) {
-          ticks.push(point.timestamp);
-          lastHour = hour;
-        }
-      }
-
-      return ticks;
-    }
-  }, [data, totalHours]);
-
-  // Format a tick — date only when it's a day boundary, time only for first/last
-  const formatXTick = useCallback(
-    (timestamp) => {
-      try {
-        const d = parseISO(timestamp);
-        if (totalHours > 24) return format(d, "dd/MM");
-        return format(d, "HH:00");
-      } catch {
-        return timestamp;
-      }
-    },
-    [totalHours]
+  const data = useMemo(
+    () => mergeRecords(selectedIds, histories, activeMetric.key),
+    [selectedIds, histories, activeMetric]
   );
+  const xTicks = useMemo(() => buildXTicks(data), [data]);
+  const multiDay = spanInHours(data) > 24;
 
-  // Tooltip label — full date and time
-  const formatTooltipLabel = (timestamp) => {
-    try {
-      return format(parseISO(timestamp), "dd MMM HH:mm");
-    } catch {
-      return timestamp;
-    }
-  };
-
-  // Y axis — append the unit
-  const formatYTick = (value) => `${value} ${activeMetric.unit}`;
+  const isAnyLoading = selectedIds.some((id) => histories[id]?.isLoading);
+  const failed = selectedIds.filter((id) => histories[id]?.error);
+  // Only once every request has answered: before that the chart keeps
+  // showing the previous data
+  const isEmpty =
+    selectedIds.length > 0 &&
+    data.length === 0 &&
+    !isAnyLoading &&
+    failed.length < selectedIds.length;
 
   return (
     <div className={styles.wrapper}>
@@ -259,7 +174,9 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
         {METRICS.map((m) => (
           <button
             key={m.key}
+            type="button"
             className={`${styles.metricChip} ${activeMetric.key === m.key ? styles.active : ""}`}
+            aria-pressed={activeMetric.key === m.key}
             onClick={() => setActiveMetric(m)}
           >
             {m.label}
@@ -272,44 +189,58 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
         <input
           type="datetime-local"
           className={styles.dateInput}
-          value={fromInput}
+          aria-label="Start date"
+          value={from}
           onChange={(e) => setFromInput(e.target.value)}
         />
         <input
           type="datetime-local"
           className={styles.dateInput}
-          value={toInput}
+          aria-label="End date"
+          value={to}
           onChange={(e) => setToInput(e.target.value)}
         />
-        <button className={styles.applyButton} onClick={handleApplyDateRange}>
+        <button
+          type="button"
+          className={styles.applyButton}
+          onClick={handleApplyDateRange}
+          disabled={!from || !to || selectedIds.length === 0}
+        >
           Apply
         </button>
       </div>
 
-      {/* ---- Battery selector ---- */}
+      {/* ---- Asset selector ---- */}
       <div className={styles.selectorWrapper} ref={dropdownRef}>
-        <div className={styles.selectorBox} onClick={() => setIsDropdownOpen((prev) => !prev)}>
+        <div
+          className={styles.selectorBox}
+          role="button"
+          tabIndex={0}
+          aria-label="Select assets"
+          aria-haspopup="true"
+          aria-expanded={isDropdownOpen}
+          onClick={() => setIsDropdownOpen((prev) => !prev)}
+          onKeyDown={handleSelectorKeyDown}
+        >
           {selectedIds.length === 0 && <span className={styles.placeholder}>Select assets...</span>}
-          {selectedIds.map((id) => {
-            const battery = batteries.find((b) => String(b.id) === String(id));
-            return (
-              <span key={id} className={styles.tag}>
-                {battery?.name ?? `Asset ${id}`}
-                <button
-                  className={styles.tagRemove}
-                  // Prevent the click from bubbling up to selectorBox
-                  // which would toggle the dropdown
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemoveBattery(id);
-                  }}
-                  aria-label={`Remove ${battery?.name}`}
-                >
-                  ×
-                </button>
-              </span>
-            );
-          })}
+          {selectedIds.map((id) => (
+            <span key={id} className={styles.tag}>
+              {nameOf(id)}
+              <button
+                type="button"
+                className={styles.tagRemove}
+                // Prevent the click from bubbling up to selectorBox
+                // which would toggle the dropdown
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemoveAsset(id);
+                }}
+                aria-label={`Remove ${nameOf(id)}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
           <ChevronDown
             size={16}
             className={`${styles.chevron} ${isDropdownOpen ? styles.open : ""}`}
@@ -318,23 +249,21 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
 
         {isDropdownOpen && (
           <div className={styles.dropdown}>
-            {batteries.map((battery) => {
-              const isSelected = selectedIds.map(String).includes(String(battery.id));
+            {assets.map((asset) => {
+              const isSelected = selectedIds.includes(asset.id);
               return (
-                <div
-                  key={battery.id}
+                <button
+                  key={asset.id}
+                  type="button"
                   className={`${styles.dropdownItem} ${isSelected ? styles.selected : ""}`}
-                  onClick={() => {
-                    if (isSelected) {
-                      handleRemoveBattery(battery.id);
-                    } else {
-                      handleAddBattery(battery.id);
-                    }
-                  }}
+                  aria-pressed={isSelected}
+                  onClick={() =>
+                    isSelected ? handleRemoveAsset(asset.id) : handleAddAsset(asset.id)
+                  }
                 >
-                  <span>{battery.name}</span>
+                  <span>{asset.name}</span>
                   {isSelected && <X size={12} />}
-                </div>
+                </button>
               );
             })}
           </div>
@@ -344,10 +273,17 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
       {/* ---- Chart ---- */}
       {isAnyLoading && <p className={styles.loadingText}>Loading data...</p>}
 
-      {/* Show empty state only when no asset is selected and nothing is loading */}
       {selectedIds.length === 0 && (
         <p className={styles.emptyText}>Select an asset to display the chart.</p>
       )}
+
+      {isEmpty && <p className={styles.emptyText}>No data for this period.</p>}
+
+      {failed.map((id) => (
+        <p key={id} className={styles.errorText} role="alert">
+          Could not load {nameOf(id)}: {histories[id]?.error}
+        </p>
+      ))}
 
       {selectedIds.length > 0 && (
         <div className={styles.chartWrapper}>
@@ -357,8 +293,8 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
                 <XAxis
                   dataKey="timestamp"
                   ticks={xTicks}
-                  tickFormatter={(value, index) => formatXTick(value, index)}
-                  tick={{ fontFamily: "var(--font-mono)", fontSize: 10 }}
+                  tickFormatter={(value: string) => safeFormat(value, multiDay ? "dd/MM" : "HH:00")}
+                  tick={AXIS_TICK}
                   tickLine={false}
                   axisLine={false}
                   interval={0}
@@ -367,8 +303,8 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
                   height={50}
                 />
                 <YAxis
-                  tickFormatter={formatYTick}
-                  tick={{ fontFamily: "var(--font-mono)", fontSize: 10 }}
+                  tickFormatter={(value: number) => `${value} ${activeMetric.unit}`}
+                  tick={AXIS_TICK}
                   tickLine={false}
                   axisLine={false}
                   width={64}
@@ -377,7 +313,7 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
                   positive means charging, negative means discharging */}
                 <ReferenceLine y={0} stroke="var(--color-toggle-bg)" strokeDasharray="3 3" />
                 <Tooltip
-                  labelFormatter={formatTooltipLabel}
+                  labelFormatter={(label) => safeFormat(String(label), "dd MMM HH:mm")}
                   contentStyle={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 11,
@@ -386,15 +322,14 @@ export default function AssetComparisonChart({ initialAssetId, assets }) {
                     borderRadius: 6,
                   }}
                   labelStyle={{ color: "var(--color-text-secondary)" }}
-                  formatter={(value, name) => {
-                    const battery = batteries.find((b) => String(b.id) === String(name));
-                    const label = battery?.name ?? `Asset ${name}`;
-                    return [`${value} ${activeMetric.unit}`, label];
-                  }}
+                  formatter={(value, name) => [
+                    `${String(value)} ${activeMetric.unit}`,
+                    nameOf(String(name)),
+                  ]}
                 />
                 {selectedIds.map((id, index) => (
                   <Line
-                    key={String(id)}
+                    key={id}
                     type="monotone"
                     dataKey={String(id)}
                     stroke={LINE_COLORS[index % LINE_COLORS.length]}
