@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { errorMessage, fetchJson } from "@/lib/fetchJson";
+import { errorMessage, fetchJson, HttpError } from "@/lib/fetchJson";
 import type { AssetHistoryRange, SocRecord } from "@/types/api";
 
 const DEFAULT_LIMIT = 30;
@@ -7,6 +7,7 @@ const INITIAL_WINDOW_MS = 5 * 60 * 60 * 1000;
 
 export interface AssetHistory {
   records: SocRecord[];
+  /** Range returned by the backend, or the requested one until it answers */
   fromTs: string | null;
   toTs: string | null;
   isLoading: boolean;
@@ -37,8 +38,8 @@ export function useAssetHistory() {
         ...prev,
         [assetId]: {
           records: prev[assetId]?.records ?? [],
-          fromTs: null,
-          toTs: null,
+          fromTs: fromTimestamp ?? prev[assetId]?.fromTs ?? null,
+          toTs: toTimestamp ?? prev[assetId]?.toTs ?? null,
           isLoading: true,
           error: null,
         },
@@ -76,14 +77,16 @@ export function useAssetHistory() {
         }));
       } catch (err) {
         if (!isLatest()) return;
+        // The backend answers 404 when the range holds no record: not an error
+        const noRecords = err instanceof HttpError && err.status === 404;
         setHistories((prev) => ({
           ...prev,
           [assetId]: {
-            records: prev[assetId]?.records ?? [],
+            records: noRecords ? [] : (prev[assetId]?.records ?? []),
             fromTs: prev[assetId]?.fromTs ?? null,
             toTs: prev[assetId]?.toTs ?? null,
             isLoading: false,
-            error: errorMessage(err),
+            error: noRecords ? null : errorMessage(err),
           },
         }));
       }
@@ -91,10 +94,11 @@ export function useAssetHistory() {
     []
   );
 
-  // Loads the last 5 hours, unless records are already there
+  // Loads the last 5 hours, unless the asset was already requested.
+  // Stable across renders, so it can be called from an effect.
   const initAsset = useCallback(
     (assetId: number) => {
-      if ((histories[assetId]?.records.length ?? 0) > 0) return;
+      if (latestRequest.current.has(assetId)) return;
 
       // Send full UTC ISO strings with Z suffix as required by the API
       const now = Date.now();
@@ -104,7 +108,7 @@ export function useAssetHistory() {
         new Date(now).toISOString()
       );
     },
-    [histories, fetchRecords]
+    [fetchRecords]
   );
 
   const reloadAsset = useCallback(

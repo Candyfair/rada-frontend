@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { historyRange } from "@/__fixtures__";
+import { assetNotFound, historyRange } from "@/__fixtures__";
 import type { AssetHistoryRange } from "@/types/api";
 import { useAssetHistory } from "./useAssetHistory";
 import { deferred, mockFetch } from "./testUtils";
@@ -34,7 +34,12 @@ describe("useAssetHistory", () => {
     const { result } = renderHook(() => useAssetHistory());
     act(() => result.current.initAsset(1));
 
-    expect(result.current.histories[1]).toMatchObject({ records: [], isLoading: true });
+    expect(result.current.histories[1]).toMatchObject({
+      records: [],
+      fromTs: FROM,
+      toTs: TO,
+      isLoading: true,
+    });
     await waitFor(() => expect(result.current.histories[1]?.isLoading).toBe(false));
 
     const query = params(fetchMock);
@@ -62,6 +67,42 @@ describe("useAssetHistory", () => {
     act(() => result.current.initAsset(1));
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("initAsset skips an asset that is still loading", async () => {
+    const reply = deferred<{ body: unknown }>();
+    const fetchMock = mockFetch(() => reply.promise);
+
+    const { result } = renderHook(() => useAssetHistory());
+    act(() => result.current.initAsset(1));
+    act(() => result.current.initAsset(1));
+    await act(async () => reply.resolve({ body: rangeFor(1) }));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("initAsset keeps the same identity across renders", async () => {
+    mockFetch(() => ({ body: rangeFor(1) }));
+
+    const { result } = renderHook(() => useAssetHistory());
+    const first = result.current.initAsset;
+    act(() => first(1));
+    await waitFor(() => expect(result.current.histories[1]?.isLoading).toBe(false));
+
+    expect(result.current.initAsset).toBe(first);
+  });
+
+  it("initAsset loads an asset again after it was removed", async () => {
+    const fetchMock = mockFetch(() => ({ body: rangeFor(1) }));
+
+    const { result } = renderHook(() => useAssetHistory());
+    act(() => result.current.initAsset(1));
+    await waitFor(() => expect(result.current.histories[1]?.isLoading).toBe(false));
+    act(() => result.current.removeAsset(1));
+    act(() => result.current.initAsset(1));
+    await waitFor(() => expect(result.current.histories[1]?.isLoading).toBe(false));
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("reloadAsset requests the given range", async () => {
@@ -113,6 +154,28 @@ describe("useAssetHistory", () => {
     expect(result.current.histories[1]).toMatchObject({
       records: ascending,
       error: "HTTP 500",
+    });
+  });
+
+  it("treats a 404 as a range without records, not as an error", async () => {
+    let status = 200;
+    mockFetch(() => ({ body: status === 200 ? rangeFor(1) : assetNotFound, status }));
+
+    const { result } = renderHook(() => useAssetHistory());
+    act(() => result.current.reloadAsset(1, FROM, TO));
+    await waitFor(() => expect(result.current.histories[1]?.isLoading).toBe(false));
+
+    status = 404;
+    act(() => result.current.reloadAsset(1, "2026-08-01T00:00:00.000Z", TO));
+    await waitFor(() => expect(result.current.histories[1]?.isLoading).toBe(false));
+
+    // The requested range stays, so the date inputs keep showing it
+    expect(result.current.histories[1]).toEqual({
+      records: [],
+      fromTs: "2026-08-01T00:00:00.000Z",
+      toTs: TO,
+      isLoading: false,
+      error: null,
     });
   });
 
